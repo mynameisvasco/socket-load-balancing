@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.ServerSocket;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -54,7 +53,7 @@ public class Server {
                 var request = (RequestMessage) input.readObject();
                 outputStreams.put(request.requestId(), output);
 
-                if (getIterations() + request.numberOfIterations() > 20) {
+                if (canDoIterations(request.numberOfIterations())) {
                     System.out.printf("Request rejected because server has more than 20 iterations %s\n", request);
                     var response = request.respond(id, 0, ResponseCodes.Rejected);
                     output.writeObject(response);
@@ -87,6 +86,7 @@ public class Server {
                 }
 
                 outputStreams.get(request.requestId()).writeObject(response);
+                outputStreams.remove(request.requestId());
                 subIterations(request.numberOfIterations());
             } catch (IOException | InterruptedException e) {
                 System.err.printf("Failed to respond to request %s\n", request);
@@ -107,10 +107,10 @@ public class Server {
         totalIterationsLock.unlock();
     }
 
-    private int getIterations() {
+    private boolean canDoIterations(int numberOfIterations) {
         try {
             totalIterationsLock.lock();
-            return totalIterations;
+            return totalIterations + numberOfIterations > 20;
         } finally {
             totalIterationsLock.unlock();
         }
