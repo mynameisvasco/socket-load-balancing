@@ -21,7 +21,6 @@ public class Server {
     private ServerSocket server;
     private int totalIterations = 0;
 
-
     public Server(int id, int port) {
         this.id = id;
         this.port = port;
@@ -124,7 +123,7 @@ public class Server {
     }
 
     public static void main(String[] args) {
-        var server = new Server(1, 8000);
+        var server = new Server(1, 9000);
         server.listen();
     }
 }

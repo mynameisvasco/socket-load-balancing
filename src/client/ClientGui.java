@@ -2,9 +2,11 @@ package client;
 
 import shared.RequestCodes;
 import shared.RequestMessage;
+import shared.SocketInfo;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.util.List;
 
 public class ClientGui extends JFrame {
     private static int RequestCount = 0;
@@ -17,7 +19,7 @@ public class ClientGui extends JFrame {
 
     public ClientGui(int id) {
         super("Client");
-        client = new Client(id);
+        client = new Client(id, List.of(new SocketInfo(1, "localhost", 8000)));
         pendingRequestsTable.setModel(client.getPendingRequestsTableModel());
         responsesTable.setModel(client.getResponsesTableModel());
         sendButton.addActionListener(this::onSendRequest);
