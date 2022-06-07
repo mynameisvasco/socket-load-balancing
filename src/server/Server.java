@@ -8,7 +8,6 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.ServerSocket;
-import java.util.HashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -16,14 +15,13 @@ public class Server {
     private final int id;
     private final int port;
     private final Fifo<RequestMessage> pendingRequests = new Fifo<>(2);
-    private final HashMap<Integer, ObjectOutputStream> outputStreams = new HashMap<>();
     private final Lock totalIterationsLock = new ReentrantLock();
     private ServerSocket server;
     private int totalIterations = 0;
 
     public Server(int id, int port) {
         this.id = id;
-        this.port = port;
+        this.port = 8999 + id;
 
         try {
             server = new ServerSocket(port);
@@ -38,7 +36,7 @@ public class Server {
         System.out.printf("Server listen on port %s\n", port);
 
         for (int i = 0; i < 3; i++) {
-            var thread = new Thread(this::requestHandler);
+            var thread = new Thread(this::responseSender);
             thread.start();
         }
 
@@ -46,25 +44,30 @@ public class Server {
             try {
                 var client = server.accept();
                 var clientInfo = String.format("%s:%d", client.getInetAddress().getHostAddress(), client.getPort());
-                System.out.printf("Incoming request from %s\n", clientInfo);
-                var output = new ObjectOutputStream(client.getOutputStream());
+                new ObjectOutputStream(client.getOutputStream());
                 var input = new ObjectInputStream(client.getInputStream());
                 var request = (RequestMessage) input.readObject();
-                outputStreams.put(request.requestId(), output);
+                System.out.printf("Request received from %s\n", clientInfo);
 
                 if (canDoIterations(request.numberOfIterations())) {
+                    var receiver = request.client().createSocket();
+                    var output = new ObjectOutputStream(receiver.getOutputStream());
                     System.out.printf("Request rejected because server has more than 20 iterations %s\n", request);
                     var response = request.respond(id, 0, ResponseCodes.Rejected);
                     output.writeObject(response);
+                    receiver.close();
                     continue;
                 }
 
                 var acceptedRequest = pendingRequests.enqueue(request);
 
                 if (!acceptedRequest) {
+                    var receiver = request.client().createSocket();
+                    var output = new ObjectOutputStream(receiver.getOutputStream());
                     System.out.printf("Request rejected because server has 3 pending requests %s\n", request);
                     var response = request.respond(id, 0, ResponseCodes.Rejected);
                     output.writeObject(response);
+                    receiver.close();
                 }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
@@ -72,9 +75,10 @@ public class Server {
         }
     }
 
-    private void requestHandler() {
+    private void responseSender() {
         while (true) {
             var request = pendingRequests.dequeue();
+            var receiver = request.client().createSocket();
             addIterations(request.numberOfIterations());
             var pi = truncateTo(Math.PI, request.numberOfIterations());
             var response = request.respond(id, pi, ResponseCodes.PiCalculation);
@@ -84,13 +88,16 @@ public class Server {
                     Thread.sleep(5000);
                 }
 
-                outputStreams.get(request.requestId()).writeObject(response);
-                outputStreams.remove(request.requestId());
-                subIterations(request.numberOfIterations());
+                var output = new ObjectOutputStream(receiver.getOutputStream());
+                output.writeObject(response);
+                System.out.printf("Response sent to %s\n", String.format("%s:%d", receiver.getInetAddress().getHostAddress(), receiver.getPort()));
+                receiver.close();
             } catch (IOException | InterruptedException e) {
                 System.err.printf("Failed to respond to request %s\n", request);
                 e.printStackTrace();
             }
+
+            subIterations(request.numberOfIterations());
         }
     }
 
