@@ -24,7 +24,7 @@ public class Server {
     public Server(int id, int port) {
         this.id = id;
         this.port = 8999 + id;
-        this.monitorInfo = new SocketInfo(0, "localhost", 6999);
+        this.monitorInfo = new SocketInfo("localhost", 6999);
 
         try {
             server = new ServerSocket(port);
@@ -74,6 +74,8 @@ public class Server {
                     output.writeObject(request);
                     receiver.close();
                 }
+
+                addIterations(request.getNumberOfIterations());
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -89,6 +91,7 @@ public class Server {
             request.setServerId(id);
             request.setPi(pi);
             request.setCode(MessageCodes.PiCalculationResult);
+
             try {
                 for (int k = 0; k < request.getNumberOfIterations(); k++) {
                     Thread.sleep(5000);
@@ -141,7 +144,7 @@ public class Server {
             var output = new ObjectOutputStream(monitor.getOutputStream());
             var input = new ObjectInputStream(monitor.getInputStream());
             var registerMessage = new Message(0, 0, id, MessageCodes.RegisterServer,
-                    0, 0, 0, new SocketInfo(id, "localhost", port));
+                    0, 0, 0, new SocketInfo("localhost", port));
             output.writeObject(registerMessage);
             output.flush();
             System.out.printf("Server registered on monitor at %s:%d\n", monitorInfo.address(), monitorInfo.port());
