@@ -1,6 +1,6 @@
 package lb;
 
-import shared.RequestMessage;
+import shared.Message;
 import shared.SocketInfo;
 
 import java.io.IOException;
@@ -17,6 +17,7 @@ public class Loadbalancer {
     private final List<SocketInfo> serverInfos;
 
     public Loadbalancer(int id, List<SocketInfo> serverInfos) {
+        this.id = id;
         this.port = 7999 + id;
         this.serverInfos = serverInfos;
 
@@ -37,7 +38,7 @@ public class Loadbalancer {
                 var client = loadbalancer.accept();
                 new ObjectOutputStream(client.getOutputStream());
                 var input = new ObjectInputStream(client.getInputStream());
-                var request = (RequestMessage) input.readObject();
+                var request = (Message) input.readObject();
                 System.out.printf("Request received from %s:%d\n", client.getInetAddress().getHostAddress(), client.getPort());
                 var thread = new Thread(() -> requestHandler(request));
                 thread.start();
@@ -51,7 +52,7 @@ public class Loadbalancer {
         return serverInfos.get(0).createSocket();
     }
 
-    private void requestHandler(RequestMessage request) {
+    private void requestHandler(Message request) {
         try {
             var server = getLessLoadServer();
             var serverOutput = new ObjectOutputStream(server.getOutputStream());

@@ -1,7 +1,6 @@
 package client;
 
-import shared.RequestMessage;
-import shared.ResponseMessage;
+import shared.Message;
 
 import javax.swing.table.DefaultTableModel;
 
@@ -15,7 +14,7 @@ public class ResponsesTableModel extends DefaultTableModel {
         addColumn("Deadline");
     }
 
-    public void addResponse(ResponseMessage response) {
-        addRow(new Object[]{response.requestId(), response.serverId(), response.code(), response.numberOfIterations(), response.pi(), response.deadline()});
+    public void addResponse(Message response) {
+        addRow(new Object[]{response.getRequestId(), response.getServerId(), response.getCode().ordinal(), response.getNumberOfIterations(), response.getPi(), response.getDeadline()});
     }
 }

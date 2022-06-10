@@ -1,9 +1,6 @@
 package client;
 
-import shared.RequestCodes;
-import shared.RequestMessage;
-import shared.ResponseMessage;
-import shared.SocketInfo;
+import shared.*;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -33,14 +30,14 @@ public class Client {
             System.exit(-1);
         }
 
-        this.primaryLbInfo = new SocketInfo(1, "localhost", 8000);
+        this.primaryLbInfo = new SocketInfo(1, "localhost", 15999);
         this.secondaryLbInfo = new SocketInfo(2, "localhost", 8001);
     }
 
     public void sendRequest(int numberOfIterations) {
         var requestId = 1000 * id + requestCount;
-        var request = new RequestMessage(id, requestId, RequestCodes.PiCalculation, numberOfIterations, 1,
-                new SocketInfo(id, "localhost", receiverPort));
+        var request = new Message(id, requestId, 0, MessageCodes.PiCalculationRequest, numberOfIterations,
+                0, 1, new SocketInfo(id, "localhost", receiverPort));
 
         pendingRequestsTableModel.addRequest(request);
         var senderThread = new Thread(() -> requestSender(request));
@@ -58,20 +55,20 @@ public class Client {
         return responsesTableModel;
     }
 
-    private void requestSender(RequestMessage request) {
+    private void requestSender(Message request) {
         try {
             var loadbalancer = primaryLbInfo.createSocket();
             var output = new ObjectOutputStream(loadbalancer.getOutputStream());
             var input = new ObjectInputStream(loadbalancer.getInputStream());
             output.writeObject(request);
             output.flush();
-            System.out.printf("Request sent %s\n", request);
-            var response = (ResponseMessage) input.readObject();
-            System.out.printf("Response received %s\n", response);
+            System.out.printf("Request sent %s\n", request.getRequestId());
+            var response = (Message) input.readObject();
+            System.out.printf("Response received %s\n", response.getRequestId());
             responsesTableModel.addResponse(response);
             loadbalancer.close();
         } catch (IOException e) {
-            System.err.printf("Failed to send request %s\n", request);
+            System.err.printf("Failed to send request %s\n", request.getRequestId());
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -81,8 +78,8 @@ public class Client {
         try {
             var sender = receiver.accept();
             var input = new ObjectInputStream(sender.getInputStream());
-            var response = (ResponseMessage) input.readObject();
-            System.out.printf("Response received %s\n", response);
+            var response = (Message) input.readObject();
+            System.out.printf("Response received %s\n", response.getRequestId());
             responsesTableModel.addResponse(response);
             sender.close();
         } catch (IOException e) {

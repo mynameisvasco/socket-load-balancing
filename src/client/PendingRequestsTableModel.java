@@ -1,6 +1,6 @@
 package client;
 
-import shared.RequestMessage;
+import shared.Message;
 
 import javax.swing.table.DefaultTableModel;
 
@@ -12,7 +12,7 @@ public class PendingRequestsTableModel extends DefaultTableModel {
         addColumn("Deadline");
     }
 
-    public void addRequest(RequestMessage request) {
-        addRow(new Object[] {request.requestId(), request.code(), request.numberOfIterations(), request.deadline()});
+    public void addRequest(Message request) {
+        addRow(new Object[] {request.getRequestId(), request.getCode().ordinal(), request.getNumberOfIterations(), request.getDeadline()});
     }
 }
