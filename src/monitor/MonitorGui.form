@@ -63,14 +63,14 @@
                   <text value="Cluster Status"/>
                 </properties>
               </component>
-              <scrollpane id="7e513" binding="clusterStatusTable">
+              <scrollpane id="7e513">
                 <constraints>
                   <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="5aee" class="javax.swing.JTable" binding="table1" default-binding="true">
+                  <component id="5aee" class="javax.swing.JTable" binding="clusterStatusTable">
                     <constraints/>
                     <properties/>
                   </component>
@@ -84,14 +84,14 @@
                   <text value="Requests Status"/>
                 </properties>
               </component>
-              <scrollpane id="b8d33" binding="requestsStatusTable">
+              <scrollpane id="b8d33">
                 <constraints>
                   <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="ac717" class="javax.swing.JTable" binding="table2" default-binding="true">
+                  <component id="ac717" class="javax.swing.JTable" binding="requestStatusTable">
                     <constraints/>
                     <properties/>
                   </component>

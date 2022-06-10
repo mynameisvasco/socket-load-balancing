@@ -4,5 +4,8 @@ public enum MessageCodes {
     PiCalculationRequest,
     PiCalculationResult,
     PiCalculationRejection,
-    RegisterServer
+    RegisterServer,
+    RegisterLoadBalancer,
+    ServerHeartbeat,
+    LoadBalancerHeartbeat
 }

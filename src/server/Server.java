@@ -3,6 +3,7 @@ package server;
 import shared.Fifo;
 import shared.Message;
 import shared.MessageCodes;
+import shared.SocketInfo;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Server {
     private final int id;
     private final int port;
+    private final SocketInfo monitorInfo;
     private final Fifo<Message> pendingRequests = new Fifo<>(2);
     private final Lock totalIterationsLock = new ReentrantLock();
     private ServerSocket server;
@@ -22,6 +24,7 @@ public class Server {
     public Server(int id, int port) {
         this.id = id;
         this.port = 8999 + id;
+        this.monitorInfo = new SocketInfo(0, "localhost", 6999);
 
         try {
             server = new ServerSocket(port);
@@ -50,7 +53,7 @@ public class Server {
                 System.out.printf("Request received from %s\n", clientInfo);
 
                 if (canDoIterations(request.getNumberOfIterations())) {
-                    var receiver = request.getClient().createSocket();
+                    var receiver = request.getSocketInfo().createSocket();
                     var output = new ObjectOutputStream(receiver.getOutputStream());
                     System.out.printf("Request rejected because server has more than 20 iterations %s\n", request);
                     request.setServerId(id);
@@ -63,7 +66,7 @@ public class Server {
                 var acceptedRequest = pendingRequests.enqueue(request);
 
                 if (!acceptedRequest) {
-                    var receiver = request.getClient().createSocket();
+                    var receiver = request.getSocketInfo().createSocket();
                     var output = new ObjectOutputStream(receiver.getOutputStream());
                     System.out.printf("Request rejected because server has 3 pending requests %s\n", request);
                     request.setServerId(id);
@@ -80,7 +83,7 @@ public class Server {
     private void responseSender() {
         while (true) {
             var request = pendingRequests.dequeue();
-            var receiver = request.getClient().createSocket();
+            var receiver = request.getSocketInfo().createSocket();
             addIterations(request.getNumberOfIterations());
             var pi = truncateTo(Math.PI, request.getNumberOfIterations());
             request.setServerId(id);
@@ -132,8 +135,26 @@ public class Server {
                 .doubleValue();
     }
 
+    private void registerServer() {
+        try {
+            var monitor = monitorInfo.createSocket();
+            var output = new ObjectOutputStream(monitor.getOutputStream());
+            var input = new ObjectInputStream(monitor.getInputStream());
+            var registerMessage = new Message(0, 0, id, MessageCodes.RegisterServer,
+                    0, 0, 0, new SocketInfo(id, "localhost", port));
+            output.writeObject(registerMessage);
+            output.flush();
+            System.out.printf("Server registered on monitor at %s:%d\n", monitorInfo.address(), monitorInfo.port());
+            monitor.close();
+        } catch (IOException e) {
+            System.err.printf("Failed to register server on monitor at %s:%d\n", monitorInfo.address(),
+                    monitorInfo.port());
+        }
+    }
+
     public static void main(String[] args) {
         var server = new Server(1, 9000);
+        server.registerServer();
         server.listen();
     }
 }

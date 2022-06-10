@@ -11,10 +11,10 @@ public class Message implements Serializable {
     private final int numberOfIterations;
     private double pi;
     private final int deadline;
-    private final SocketInfo client;
+    private final SocketInfo socketInfo;
 
     public Message(int clientId, int requestId, int serverId, MessageCodes code, int numberOfIterations, double pi,
-                      int deadline, SocketInfo client) {
+                      int deadline, SocketInfo socketInfo) {
         this.clientId = clientId;
         this.requestId = requestId;
         this.serverId = serverId;
@@ -22,7 +22,7 @@ public class Message implements Serializable {
         this.numberOfIterations = numberOfIterations;
         this.pi = pi;
         this.deadline = deadline;
-        this.client = client;
+        this.socketInfo = socketInfo;
     }
 
     public int getClientId() {
@@ -53,8 +53,8 @@ public class Message implements Serializable {
         return deadline;
     }
 
-    public SocketInfo getClient() {
-        return client;
+    public SocketInfo getSocketInfo() {
+        return socketInfo;
     }
 
     public void setServerId(int serverId) {

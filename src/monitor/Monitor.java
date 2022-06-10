@@ -11,11 +11,13 @@ import java.net.Socket;
 public class Monitor {
     private ServerSocket serverSocket;
     private Socket clientSocket;
+    private final ClusterStatusTableModel clusterStatusTableModel;
 
     int port;
 
     public Monitor(int port) {
         this.port = port;
+        clusterStatusTableModel = new ClusterStatusTableModel();
         try {
             serverSocket = new ServerSocket(port);
         } catch (IOException e) {
@@ -37,14 +39,28 @@ public class Monitor {
                 switch (message.getCode()) {
                     case RegisterServer:
                         String serverAddress = client.getInetAddress().getHostAddress();
+                        clusterStatusTableModel.addRow(new Object[]{"Server", message.getServerId(), "UP", 0});
                         int serverPort = client.getPort();
                         int serverID = message.getServerId();
                         System.out.printf("Server with ID %d on %s:%d registered on monitor\n", serverID, serverAddress, serverPort);
+                        break;
+                    case RegisterLoadBalancer:
+                        String type;
+                        if (clusterStatusTableModel.activeLoadBalancerExists()) {
+                            type = "Secondary LB";
+                        } else {
+                            type = "Primary LB";
+                        }
+                        clusterStatusTableModel.addRow(new Object[]{"Type", message.getServerId(), "UP", "-"});
                         break;
                 }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    public ClusterStatusTableModel getClusterStatusTableModel() {
+        return clusterStatusTableModel;
     }
 }

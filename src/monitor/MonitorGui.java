@@ -14,10 +14,8 @@ public class MonitorGui extends JFrame {
     private JLabel portLabel;
     private JLabel clusterStatusLabel;
     private JLabel requestsStatus;
-    private JTable table1;
-    private JTable table2;
-    private JScrollPane clusterStatusTable;
-    private JScrollPane requestsStatusTable;
+    private JTable clusterStatusTable;
+    private JTable requestStatusTable;
 
     private Monitor monitor;
 
@@ -27,7 +25,6 @@ public class MonitorGui extends JFrame {
         setContentPane(mainPanel);
         pack();
         setVisible(true);
-//        formattedTextField1.setFormatterFactory(new DefaultFormatterFactory(new NumberFormatter(NumberFormat.getNumberInstance())));
         portTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -49,6 +46,7 @@ public class MonitorGui extends JFrame {
                 launchButton.setEnabled(false);
                 portTextField.setEnabled(false);
                 monitor = new Monitor(Integer.parseInt(portTextField.getText()));
+                clusterStatusTable.setModel(monitor.getClusterStatusTableModel());
                 Thread listenThread = new Thread(() -> monitor.listen());
                 listenThread.start();
             }
