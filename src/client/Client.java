@@ -9,35 +9,39 @@ import java.net.ServerSocket;
 
 public class Client {
     private static int requestCount = 0;
-    private final int id;
     private final PendingRequestsTableModel pendingRequestsTableModel = new PendingRequestsTableModel();
     private final ResponsesTableModel responsesTableModel = new ResponsesTableModel();
-    private final int receiverPort;
+    private int receiverPort;
+    private int id;
     private ServerSocket receiver;
-    private SocketInfo primaryLbInfo;
-    private SocketInfo secondaryLbInfo;
+    private SocketInfo loadBalancerInfo;
 
-
-    public Client(int id) {
+    public void setId(int id) {
         this.id = id;
         this.receiverPort = 5999 + id;
 
         try {
+            if(this.receiver != null && !this.receiver.isClosed()) {
+                this.receiver.close();
+            }
+
             this.receiver = new ServerSocket(receiverPort);
         } catch (IOException e) {
             System.err.printf("Failed to create receiver socket at port %d\n", receiverPort);
             e.printStackTrace();
             System.exit(-1);
         }
-
-        this.primaryLbInfo = new SocketInfo(1, "localhost", 15999);
-        this.secondaryLbInfo = new SocketInfo(2, "localhost", 8001);
     }
 
     public void sendRequest(int numberOfIterations) {
+        if (loadBalancerInfo == null) {
+            System.err.println("It's not possible to send a request without setting the loadbalancer ip first");
+            return;
+        }
+
         var requestId = 1000 * id + requestCount;
         var request = new Message(id, requestId, 0, MessageCodes.PiCalculationRequest, numberOfIterations,
-                0, 1, new SocketInfo(id, "localhost", receiverPort));
+                0, 1, new SocketInfo("localhost", receiverPort));
 
         pendingRequestsTableModel.addRequest(request);
         var senderThread = new Thread(() -> requestSender(request));
@@ -45,6 +49,10 @@ public class Client {
         senderThread.start();
         receiverThread.start();
         requestCount++;
+    }
+
+    public void setLoadbalancerSocketInfo(String host, int port) {
+        loadBalancerInfo = new SocketInfo(host, port);
     }
 
     public PendingRequestsTableModel getPendingRequestsTableModel() {
@@ -57,7 +65,7 @@ public class Client {
 
     private void requestSender(Message request) {
         try {
-            var loadbalancer = primaryLbInfo.createSocket();
+            var loadbalancer = loadBalancerInfo.createSocket();
             var output = new ObjectOutputStream(loadbalancer.getOutputStream());
             var input = new ObjectInputStream(loadbalancer.getInputStream());
             output.writeObject(request);

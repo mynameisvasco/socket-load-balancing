@@ -64,7 +64,7 @@ public class Loadbalancer {
     }
 
     public static void main(String[] args) {
-        var lb = new Loadbalancer(8000, List.of(new SocketInfo(1, "localhost", 9000)));
+        var lb = new Loadbalancer(8000, List.of(new SocketInfo("localhost", 9000)));
         lb.listen();
     }
 }

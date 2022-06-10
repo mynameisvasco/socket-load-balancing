@@ -71,6 +71,8 @@ public class Server {
                     output.writeObject(request);
                     receiver.close();
                 }
+
+                addIterations(request.getNumberOfIterations());
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -81,11 +83,11 @@ public class Server {
         while (true) {
             var request = pendingRequests.dequeue();
             var receiver = request.getClient().createSocket();
-            addIterations(request.getNumberOfIterations());
             var pi = truncateTo(Math.PI, request.getNumberOfIterations());
             request.setServerId(id);
             request.setPi(pi);
             request.setCode(MessageCodes.PiCalculationResult);
+
             try {
                 for (int k = 0; k < request.getNumberOfIterations(); k++) {
                     Thread.sleep(5000);

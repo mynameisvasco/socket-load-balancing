@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public record SocketInfo(int id, String address, int port) implements Serializable {
+public record SocketInfo(String address, int port) implements Serializable {
     public Socket createSocket() {
         var socket = new Socket();
 
