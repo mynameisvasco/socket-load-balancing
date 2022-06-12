@@ -31,7 +31,7 @@ public class MonitorGui extends JFrame {
                     getToolkit().beep();
                     e.consume();
                 }
-            }
+            }   
         });
         pack();
         setVisible(true);
