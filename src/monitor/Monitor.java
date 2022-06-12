@@ -12,8 +12,7 @@ public class Monitor {
     private ServerSocket serverSocket;
     private Socket clientSocket;
     private final ClusterStatusTableModel clusterStatusTableModel;
-
-    int port;
+    private int port;
 
     public Monitor(int port) {
         this.port = port;

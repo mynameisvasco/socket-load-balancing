@@ -21,7 +21,7 @@ public class Client {
         this.receiverPort = 5999 + id;
 
         try {
-            if(this.receiver != null && !this.receiver.isClosed()) {
+            if (this.receiver != null && !this.receiver.isClosed()) {
                 this.receiver.close();
             }
 
@@ -33,15 +33,15 @@ public class Client {
         }
     }
 
-    public void sendRequest(int numberOfIterations) {
-        if (loadBalancerInfo == null) {
-            System.err.println("It's not possible to send a request without setting the loadbalancer ip first");
+    public void sendRequest(int numberOfIterations, int deadline) {
+        if (loadBalancerInfo == null || id == 0) {
+            System.err.println("It's not possible to send a request without setting the loadbalancer ip first and the client id");
             return;
         }
 
         var requestId = 1000 * id + requestCount;
         var request = new Message(id, requestId, 0, MessageCodes.PiCalculationRequest, numberOfIterations,
-                0, 1, new SocketInfo("localhost", receiverPort));
+                0, deadline, new SocketInfo("localhost", receiverPort));
 
         pendingRequestsTableModel.addRequest(request);
         var senderThread = new Thread(() -> requestSender(request));

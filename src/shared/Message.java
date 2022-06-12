@@ -2,7 +2,7 @@ package shared;
 
 import java.io.Serializable;
 
-public class Message implements Serializable {
+public class Message implements Serializable, IPriorityItem {
 
     private final int clientId;
     private final int requestId;
@@ -67,5 +67,10 @@ public class Message implements Serializable {
 
     public void setPi(double pi) {
         this.pi = pi;
+    }
+
+    @Override
+    public int getPriority() {
+        return this.deadline;
     }
 }

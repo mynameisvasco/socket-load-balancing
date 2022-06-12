@@ -58,12 +58,12 @@
               <text value="localhost:15999"/>
             </properties>
           </component>
-          <component id="29e01" class="javax.swing.JButton" binding="saveLoadBalancerIp">
+          <component id="29e01" class="javax.swing.JButton" binding="connectButton">
             <constraints>
               <grid row="2" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="Save"/>
+              <text value="Connect"/>
             </properties>
           </component>
           <component id="b531c" class="javax.swing.JTextField" binding="clientIdTextField">
@@ -84,12 +84,15 @@
               <text value="Client Id"/>
             </properties>
           </component>
-          <component id="1b479" class="javax.swing.JButton" binding="saveClientId">
+          <component id="3b424" class="javax.swing.JTextField" binding="deadlineTextField">
             <constraints>
-              <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+              <grid row="4" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                <preferred-size width="150" height="-1"/>
+              </grid>
             </constraints>
             <properties>
-              <text value="Save"/>
+              <text value="Deadline"/>
+              <toolTipText value=""/>
             </properties>
           </component>
         </children>
