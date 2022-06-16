@@ -38,7 +38,8 @@ public class Monitor {
                 var message = (Message) input.readObject();
                 switch (message.getCode()) {
                     case RegisterServer:
-                        clusterStatusTableModel.addRow(new Object[]{"Server", message.getServerId(), "UP", 0});
+                        clusterStatusTableModel.addRow(new Object[]{"Server", message.getServerId(),
+                                client.getInetAddress().getHostAddress(), client.getPort(), "UP", 0});
                         System.out.printf("Server with ID %d on %s:%d registered on monitor\n",
                                 message.getServerId(), client.getInetAddress().getHostAddress(), client.getPort());
                         break;
@@ -49,7 +50,8 @@ public class Monitor {
                         } else {
                             type = "Primary LB";
                         }
-                        clusterStatusTableModel.addRow(new Object[]{type, message.getServerId(), "UP", "-"});
+                        clusterStatusTableModel.addRow(new Object[]{type, message.getServerId(),
+                                client.getInetAddress().getHostAddress(), client.getPort(), "UP", "-"});
                         System.out.printf("Load balancer with ID %d on %s:%d registered on monitor\n",
                                 message.getServerId(), client.getInetAddress().getHostAddress(), client.getPort());
                         break;

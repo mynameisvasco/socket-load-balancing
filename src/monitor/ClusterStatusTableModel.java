@@ -6,6 +6,8 @@ public class ClusterStatusTableModel extends DefaultTableModel {
     public ClusterStatusTableModel() {
         addColumn("Type");
         addColumn("Id");
+        addColumn("Address");
+        addColumn("Port");
         addColumn("Status");
         addColumn("Number Iterations");
     }
