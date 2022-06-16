@@ -1,6 +1,7 @@
 package lb;
 
 import shared.Message;
+import shared.MessageCodes;
 import shared.SocketInfo;
 
 import java.io.IOException;
@@ -14,11 +15,13 @@ public class Loadbalancer {
     private final int id;
     private ServerSocket loadbalancer;
     private final int port;
+    private final SocketInfo monitorInfo;
     private final List<SocketInfo> serverInfos;
 
     public Loadbalancer(int id, List<SocketInfo> serverInfos) {
         this.id = id;
         this.port = 7999 + id;
+        this.monitorInfo = new SocketInfo("localhost", 6999);
         this.serverInfos = serverInfos;
 
         try {
@@ -63,8 +66,26 @@ public class Loadbalancer {
         }
     }
 
+    private void registerLoadBalancer() {
+        try {
+            var monitor = monitorInfo.createSocket();
+            var output = new ObjectOutputStream(monitor.getOutputStream());
+            var input = new ObjectInputStream(monitor.getInputStream());
+            var registerMessage = new Message(0, 0, id, MessageCodes.RegisterLoadBalancer,
+                    0, 0, 0, new SocketInfo("localhost", port));
+            output.writeObject(registerMessage);
+            output.flush();
+            System.out.printf("Load balancer registered on monitor at %s:%d\n", monitorInfo.address(), monitorInfo.port());
+            monitor.close();
+        } catch (IOException e) {
+            System.err.printf("Failed to register load balancer on monitor at %s:%d\n", monitorInfo.address(),
+                    monitorInfo.port());
+        }
+    }
+
     public static void main(String[] args) {
         var lb = new Loadbalancer(8000, List.of(new SocketInfo("localhost", 9000)));
+        lb.registerLoadBalancer();
         lb.listen();
     }
 }

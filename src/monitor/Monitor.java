@@ -38,11 +38,9 @@ public class Monitor {
                 var message = (Message) input.readObject();
                 switch (message.getCode()) {
                     case RegisterServer:
-                        String serverAddress = client.getInetAddress().getHostAddress();
                         clusterStatusTableModel.addRow(new Object[]{"Server", message.getServerId(), "UP", 0});
-                        int serverPort = client.getPort();
-                        int serverID = message.getServerId();
-                        System.out.printf("Server with ID %d on %s:%d registered on monitor\n", serverID, serverAddress, serverPort);
+                        System.out.printf("Server with ID %d on %s:%d registered on monitor\n",
+                                message.getServerId(), client.getInetAddress().getHostAddress(), client.getPort());
                         break;
                     case RegisterLoadBalancer:
                         String type;
@@ -51,7 +49,9 @@ public class Monitor {
                         } else {
                             type = "Primary LB";
                         }
-                        clusterStatusTableModel.addRow(new Object[]{"Type", message.getServerId(), "UP", "-"});
+                        clusterStatusTableModel.addRow(new Object[]{type, message.getServerId(), "UP", "-"});
+                        System.out.printf("Load balancer with ID %d on %s:%d registered on monitor\n",
+                                message.getServerId(), client.getInetAddress().getHostAddress(), client.getPort());
                         break;
                 }
             } catch (IOException | ClassNotFoundException e) {
