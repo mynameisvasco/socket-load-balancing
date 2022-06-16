@@ -14,7 +14,7 @@ public class Monitor {
     private final ClusterStatusTableModel clusterStatusTableModel;
     private final RequestStatusTableModel requestStatusTableModel;
 
-    int port;
+    private int port;
 
     public Monitor(int port) {
         this.port = port;

@@ -1,12 +1,12 @@
 package shared;
 
+import java.util.Comparator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Fifo<T> {
+public class Fifo<T extends IPriorityItem> {
     private final int size;
     private final Lock lock = new ReentrantLock();
     private final Condition isEmptyCondition = lock.newCondition();
@@ -47,8 +47,16 @@ public class Fifo<T> {
                     e.printStackTrace();
                 }
             }
-            var item = list.pop();
+
+            var index = list.stream()
+                    .min(Comparator.comparingInt(IPriorityItem::getPriority)).
+                    map(list::indexOf)
+                    .get();
+
+            var item = list.get(index);
+            list.remove(index.intValue());
             return item;
+
         } finally {
             lock.unlock();
         }
