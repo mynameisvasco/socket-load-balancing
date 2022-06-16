@@ -47,6 +47,7 @@ public class MonitorGui extends JFrame {
                 portTextField.setEnabled(false);
                 monitor = new Monitor(Integer.parseInt(portTextField.getText()));
                 clusterStatusTable.setModel(monitor.getClusterStatusTableModel());
+                requestStatusTable.setModel(monitor.getRequestStatusTableModel());
                 Thread listenThread = new Thread(() -> monitor.listen());
                 listenThread.start();
             }

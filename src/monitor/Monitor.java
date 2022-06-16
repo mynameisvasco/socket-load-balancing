@@ -12,12 +12,14 @@ public class Monitor {
     private ServerSocket serverSocket;
     private Socket clientSocket;
     private final ClusterStatusTableModel clusterStatusTableModel;
+    private final RequestStatusTableModel requestStatusTableModel;
 
     int port;
 
     public Monitor(int port) {
         this.port = port;
         clusterStatusTableModel = new ClusterStatusTableModel();
+        requestStatusTableModel = new RequestStatusTableModel();
         try {
             serverSocket = new ServerSocket(port);
         } catch (IOException e) {
@@ -64,5 +66,9 @@ public class Monitor {
 
     public ClusterStatusTableModel getClusterStatusTableModel() {
         return clusterStatusTableModel;
+    }
+
+    public RequestStatusTableModel getRequestStatusTableModel() {
+        return requestStatusTableModel;
     }
 }
