@@ -104,7 +104,7 @@ public class Server {
                 var monitor = monitorInfo.createSocket();
                 var monitorOutput = new ObjectOutputStream(monitor.getOutputStream());
                 monitorOutput.writeObject(request.copyWithCode(MessageCodes.UpdateRequest, "completed"));
-
+                monitor.close();
             } catch (IOException | InterruptedException e) {
                 System.err.printf("Failed to respond to request %s\n", request);
                 e.printStackTrace();
