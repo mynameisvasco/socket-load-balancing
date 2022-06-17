@@ -101,6 +101,10 @@ public class Server {
                 output.writeObject(request);
                 System.out.printf("Response sent to %s\n", String.format("%s:%d", receiver.getInetAddress().getHostAddress(), receiver.getPort()));
                 receiver.close();
+                var monitor = monitorInfo.createSocket();
+                var monitorOutput = new ObjectOutputStream(monitor.getOutputStream());
+                monitorOutput.writeObject(request.copyWithCode(MessageCodes.UpdateRequest, "completed"));
+
             } catch (IOException | InterruptedException e) {
                 System.err.printf("Failed to respond to request %s\n", request);
                 e.printStackTrace();
@@ -144,7 +148,7 @@ public class Server {
             var output = new ObjectOutputStream(monitor.getOutputStream());
             var input = new ObjectInputStream(monitor.getInputStream());
             var registerMessage = new Message(0, 0, id, MessageCodes.RegisterServer,
-                    0, 0, 0, new SocketInfo("localhost", port));
+                    0, 0, 0, new SocketInfo("localhost", port), "pending");
             output.writeObject(registerMessage);
             output.flush();
             System.out.printf("Server registered on monitor at %s:%d\n", monitorInfo.address(), monitorInfo.port());

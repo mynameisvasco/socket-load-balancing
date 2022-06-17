@@ -41,7 +41,7 @@ public class Client {
 
         var requestId = 1000 * id + requestCount;
         var request = new Message(id, requestId, 0, MessageCodes.PiCalculationRequest, numberOfIterations,
-                0, deadline, new SocketInfo("localhost", receiverPort));
+                0, deadline, new SocketInfo("localhost", receiverPort), "pending");
 
         pendingRequestsTableModel.addRequest(request);
         var senderThread = new Thread(() -> requestSender(request));

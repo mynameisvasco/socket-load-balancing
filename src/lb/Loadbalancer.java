@@ -2,6 +2,7 @@ package lb;
 
 import shared.Message;
 import shared.MessageCodes;
+import shared.ServerState;
 import shared.SocketInfo;
 
 import java.io.IOException;
@@ -9,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.LinkedList;
 import java.util.List;
 
 public class Loadbalancer {
@@ -51,17 +53,22 @@ public class Loadbalancer {
         }
     }
 
-    private Socket getLessLoadServer() {
+    private Socket getLessLoadServer(List<ServerState> serverStates) {
         return serverInfos.get(0).createSocket();
     }
 
     private void requestHandler(Message request) {
         try {
-            var server = getLessLoadServer();
+            var monitor = monitorInfo.createSocket();
+            var monitorOutput = new ObjectOutputStream(monitor.getOutputStream());
+            var monitorInput = new ObjectInputStream(monitor.getInputStream());
+            monitorOutput.writeObject(request.copyWithCode(MessageCodes.RegisterRequest, "pending"));
+            var serversStates = (LinkedList<ServerState>) monitorInput.readObject();
+            var server = getLessLoadServer(serversStates);
             var serverOutput = new ObjectOutputStream(server.getOutputStream());
             serverOutput.writeObject(request);
             System.out.printf("Request redirected to %s:%d\n", server.getInetAddress().getHostAddress(), server.getPort());
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
@@ -72,7 +79,7 @@ public class Loadbalancer {
             var output = new ObjectOutputStream(monitor.getOutputStream());
             var input = new ObjectInputStream(monitor.getInputStream());
             var registerMessage = new Message(0, 0, id, MessageCodes.RegisterLoadBalancer,
-                    0, 0, 0, new SocketInfo("localhost", port));
+                    0, 0, 0, new SocketInfo("localhost", port), "pending");
             output.writeObject(registerMessage);
             output.flush();
             System.out.printf("Load balancer registered on monitor at %s:%d\n", monitorInfo.address(), monitorInfo.port());

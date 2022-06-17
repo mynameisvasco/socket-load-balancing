@@ -10,11 +10,13 @@ public class Message implements Serializable, IPriorityItem {
     private MessageCodes code;
     private final int numberOfIterations;
     private double pi;
+    private final String status;
     private final int deadline;
     private final SocketInfo socketInfo;
 
+
     public Message(int clientId, int requestId, int serverId, MessageCodes code, int numberOfIterations, double pi,
-                      int deadline, SocketInfo socketInfo) {
+                      int deadline, SocketInfo socketInfo, String status) {
         this.clientId = clientId;
         this.requestId = requestId;
         this.serverId = serverId;
@@ -23,6 +25,7 @@ public class Message implements Serializable, IPriorityItem {
         this.pi = pi;
         this.deadline = deadline;
         this.socketInfo = socketInfo;
+        this.status = status;
     }
 
     public int getClientId() {
@@ -69,8 +72,16 @@ public class Message implements Serializable, IPriorityItem {
         this.pi = pi;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
     @Override
     public int getPriority() {
         return this.deadline;
+    }
+
+    public Message copyWithCode(MessageCodes code, String status) {
+        return new Message(clientId,requestId,serverId, code, numberOfIterations, pi, deadline, socketInfo, status);
     }
 }
