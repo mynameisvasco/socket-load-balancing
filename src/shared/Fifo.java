@@ -16,10 +16,6 @@ public class Fifo<T extends IPriorityItem> {
         this.size = size;
     }
 
-    public Fifo() {
-        this.size = -1;
-    }
-
     public boolean enqueue(T item) {
         try {
             lock.lock();
