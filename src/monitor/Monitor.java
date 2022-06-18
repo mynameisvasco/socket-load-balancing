@@ -1,11 +1,14 @@
 package monitor;
 
 import shared.Message;
+import shared.MessageCodes;
 import shared.ServerState;
+import shared.SocketInfo;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
@@ -15,16 +18,21 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Monitor {
     private ServerSocket serverSocket;
-    private Socket clientSocket;
     private final Lock serverStatesLock;
     private final List<ServerState> serverStates;
     private final ClusterStatusTableModel clusterStatusTableModel;
     private final RequestStatusTableModel requestStatusTableModel;
 
+    // configuration variables
     private int port;
+    private int nrHeartBeatTries;
+    private int heartBeatInterval;  // in miliseconds
 
     public Monitor(int port) {
         this.port = port;
+        this.nrHeartBeatTries = 1;
+        this.heartBeatInterval = 1000;
+
         this.serverStatesLock = new ReentrantLock();
         this.serverStates = new LinkedList<>();
         clusterStatusTableModel = new ClusterStatusTableModel();
@@ -61,7 +69,7 @@ public class Monitor {
             switch (message.getCode()) {
                 case RegisterServer -> {
                     serverStatesLock.lock();
-                    serverStates.add(new ServerState(client.getInetAddress(), client.getPort(), message.getServerId(), 0));
+                    serverStates.add(new ServerState(client.getInetAddress(), client.getPort(), message.getServerId()));
                     clusterStatusTableModel.addServer(message, client);
                     serverStatesLock.unlock();
                     System.out.printf("Server with ID %d on %s:%d registered on monitor\n", message.getServerId(), client.getInetAddress().getHostAddress(), client.getPort());
@@ -69,6 +77,7 @@ public class Monitor {
                 case RegisterLoadBalancer -> {
                     clusterStatusTableModel.addLoadbalancer(message, client);
                     System.out.printf("Load balancer with ID %d on %s:%d registered on monitor\n", message.getServerId(), client.getInetAddress().getHostAddress(), client.getPort());
+                    heartBeat(message.getServerId(), message.getSocketInfo(), message.getCode());
                 }
                 case RegisterRequest -> {
                     serverStatesLock.lock();
@@ -108,5 +117,36 @@ public class Monitor {
 
     public RequestStatusTableModel getRequestStatusTableModel() {
         return requestStatusTableModel;
+    }
+
+    private void heartBeat(int id, SocketInfo socketInfo, MessageCodes originalMessageCode) {
+        int nrHeartBeatsFailed = 0;
+        while (nrHeartBeatsFailed < nrHeartBeatTries) {
+            try {
+                Thread.sleep(heartBeatInterval);
+            } catch (InterruptedException ignored) {};
+            try {
+                var loadBalancer = socketInfo.createSocket();
+                var output = new ObjectOutputStream(loadBalancer.getOutputStream());
+                var input = new ObjectInputStream(loadBalancer.getInputStream());
+                var heartBeatMessage = new Message(0, 0, 0, MessageCodes.HeartBeat,
+                        0, 0, 0, null, "");
+                output.writeObject(heartBeatMessage);
+                output.flush();
+                loadBalancer.close();
+            } catch (ConnectException e) {
+                nrHeartBeatsFailed++;
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (originalMessageCode == MessageCodes.RegisterLoadBalancer) {
+            clusterStatusTableModel.markLoadBalancerDown(id);
+            System.out.printf("Load balancer with ID %d at %s:%d failed to provide a heart beat too many times and was " +
+                    "marked as down\n", id, socketInfo.address(), socketInfo.port());
+        } else if (originalMessageCode == MessageCodes.RegisterServer) {
+            // server crash handling code
+        }
     }
 }

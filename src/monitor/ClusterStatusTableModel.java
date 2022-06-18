@@ -37,4 +37,13 @@ public class ClusterStatusTableModel extends DefaultTableModel {
         else type = "Primary LB";
         addRow(new Object[]{type, request.getServerId(), client.getInetAddress().getHostAddress(), client.getPort(), "UP", "-"});
     }
+
+    public void markLoadBalancerDown(int loadBalancerID) {
+        for (int i = 0; i < getRowCount(); i++) {
+            if (dataVector.get(i).get(1).toString().equals(String.valueOf(loadBalancerID))) {
+                dataVector.get(i).set(4, "DOWN");
+                fireTableDataChanged();
+            }
+        }
+    }
 }

@@ -8,6 +8,5 @@ public enum MessageCodes {
     RegisterLoadBalancer,
     RegisterRequest,
     UpdateRequest,
-    ServerHeartbeat,
-    LoadBalancerHeartbeat
+    HeartBeat
 }

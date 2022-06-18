@@ -85,14 +85,14 @@ public class Server {
     private void responseSender() {
         while (true) {
             var request = pendingRequests.dequeue();
-            var receiver = request.getSocketInfo().createSocket();
-            addIterations(request.getNumberOfIterations());
-            var pi = truncateTo(Math.PI, request.getNumberOfIterations());
-            request.setServerId(id);
-            request.setPi(pi);
-            request.setCode(MessageCodes.PiCalculationResult);
-
             try {
+                var receiver = request.getSocketInfo().createSocket();
+                addIterations(request.getNumberOfIterations());
+                var pi = truncateTo(Math.PI, request.getNumberOfIterations());
+                request.setServerId(id);
+                request.setPi(pi);
+                request.setCode(MessageCodes.PiCalculationResult);
+
                 for (int k = 0; k < request.getNumberOfIterations(); k++) {
                     Thread.sleep(5000);
                 }

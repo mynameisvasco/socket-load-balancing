@@ -9,14 +9,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
 public class Loadbalancer {
     private final int id;
-    private ServerSocket loadbalancer;
+    private ServerSocket loadBalancer;
     private final int port;
     private final SocketInfo monitorInfo;
 
@@ -26,7 +25,7 @@ public class Loadbalancer {
         this.monitorInfo = new SocketInfo("localhost", 6999);
 
         try {
-            loadbalancer = new ServerSocket(port);
+            loadBalancer = new ServerSocket(port);
         } catch (IOException e) {
             System.err.format("Failed to initialize load balancer server on port %d\n", port);
             e.printStackTrace();
@@ -35,17 +34,23 @@ public class Loadbalancer {
     }
 
     public void listen() {
-        System.out.printf("Loadbalancer listen on port %d\n", port);
+        System.out.printf("Load balancer listening on port %d\n", port);
 
         while (true) {
             try {
-                var client = loadbalancer.accept();
+                var client = loadBalancer.accept();
                 new ObjectOutputStream(client.getOutputStream());
                 var input = new ObjectInputStream(client.getInputStream());
-                var request = (Message) input.readObject();
-                System.out.printf("Request received from %s:%d\n", client.getInetAddress().getHostAddress(), client.getPort());
-                var thread = new Thread(() -> requestHandler(request));
-                thread.start();
+                var message = (Message) input.readObject();
+                switch (message.getCode()) {
+                    case PiCalculationRequest:
+                        System.out.printf("Request received from %s:%d\n", client.getInetAddress().getHostAddress(), client.getPort());
+                        var thread = new Thread(() -> requestHandler(message));
+                        thread.start();
+                        break;
+                    case HeartBeat:
+                        break;
+                }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
