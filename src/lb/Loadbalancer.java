@@ -19,10 +19,10 @@ public class Loadbalancer {
     private final int port;
     private final SocketInfo monitorInfo;
 
-    public Loadbalancer(int id) {
+    public Loadbalancer(int id, int loadBalancerPort, String monitorIP, int monitorPort) {
         this.id = id;
-        this.port = 7999 + id;
-        this.monitorInfo = new SocketInfo("localhost", 6999);
+        this.port = loadBalancerPort;
+        this.monitorInfo = new SocketInfo(monitorIP, monitorPort);
 
         try {
             loadBalancer = new ServerSocket(port);
@@ -80,7 +80,7 @@ public class Loadbalancer {
         }
     }
 
-    private void registerLoadBalancer() {
+    public void registerLoadBalancer() {
         try {
             var monitor = monitorInfo.createSocket();
             var output = new ObjectOutputStream(monitor.getOutputStream());
@@ -97,9 +97,4 @@ public class Loadbalancer {
         }
     }
 
-    public static void main(String[] args) {
-        var lb = new Loadbalancer(8000);
-        lb.registerLoadBalancer();
-        lb.listen();
-    }
 }

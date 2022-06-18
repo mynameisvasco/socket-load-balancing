@@ -31,17 +31,10 @@ public class MonitorGui extends JFrame {
                     getToolkit().beep();
                     e.consume();
                 }
-            }   
+            }
         });
         pack();
         setVisible(true);
-        portTextField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                portTextField.setEditable((e.getKeyChar() >= KeyEvent.VK_0 && e.getKeyChar() <= KeyEvent.VK_9)
-                        || e.getKeyChar() == KeyEvent.VK_BACK_SPACE || e.getKeyChar() == KeyEvent.VK_DELETE);
-            }
-        });
     }
 
     private void onClose(ActionEvent actionEvent) {
