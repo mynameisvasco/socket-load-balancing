@@ -10,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -18,13 +19,11 @@ public class Loadbalancer {
     private ServerSocket loadbalancer;
     private final int port;
     private final SocketInfo monitorInfo;
-    private final List<SocketInfo> serverInfos;
 
-    public Loadbalancer(int id, List<SocketInfo> serverInfos) {
+    public Loadbalancer(int id) {
         this.id = id;
         this.port = 7999 + id;
         this.monitorInfo = new SocketInfo("localhost", 6999);
-        this.serverInfos = serverInfos;
 
         try {
             loadbalancer = new ServerSocket(port);
@@ -53,8 +52,10 @@ public class Loadbalancer {
         }
     }
 
-    private Socket getLessLoadServer(List<ServerState> serverStates) {
-        return serverInfos.get(0).createSocket();
+    private ServerState getLessLoadServer(List<ServerState> serverStates) {
+        return serverStates.stream()
+                .min(Comparator.comparingInt(ServerState::getTotalNumberOfIterations))
+                .get();
     }
 
     private void requestHandler(Message request) {
@@ -64,7 +65,8 @@ public class Loadbalancer {
             var monitorInput = new ObjectInputStream(monitor.getInputStream());
             monitorOutput.writeObject(request.copyWithCode(MessageCodes.RegisterRequest, "pending"));
             var serversStates = (LinkedList<ServerState>) monitorInput.readObject();
-            var server = getLessLoadServer(serversStates);
+            var serverState = getLessLoadServer(serversStates);
+            var server = serverState.createSocket();
             var serverOutput = new ObjectOutputStream(server.getOutputStream());
             serverOutput.writeObject(request);
             System.out.printf("Request redirected to %s:%d\n", server.getInetAddress().getHostAddress(), server.getPort());
@@ -91,7 +93,7 @@ public class Loadbalancer {
     }
 
     public static void main(String[] args) {
-        var lb = new Loadbalancer(8000, List.of(new SocketInfo("localhost", 9000)));
+        var lb = new Loadbalancer(8000);
         lb.registerLoadBalancer();
         lb.listen();
     }

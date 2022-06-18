@@ -1,0 +1,35 @@
+
+g
+java:S3457 "Q%n should be used in place of \n to produce the platform-specific line separator.(‰±
+N	java:S106 "9Replace this use of System.out or System.err by a logger.(‰±
+l
+java:S3457'"Q%n should be used in place of \n to produce the platform-specific line separator.(È«ùÎùÿÿÿÿ
+S	java:S106'"9Replace this use of System.out or System.err by a logger.(È«ùÎùÿÿÿÿ
+g
+java:S3457/"Q%n should be used in place of \n to produce the platform-specific line separator.(˜Ä½µ
+N	java:S106/"9Replace this use of System.out or System.err by a logger.(˜Ä½µ
+N
+java:S11728"3Remove this unused method parameter "serverStates".(¼¤ÍÏÿÿÿÿÿ
+N	java:S106F"9Replace this use of System.out or System.err by a logger.(é–·
+T
+java:S1854P"9Remove this useless assignment to local variable "input".(ä°¨Œùÿÿÿÿ
+E
+java:S1481P"*Remove this unused "input" local variable.(ä°¨Œùÿÿÿÿ
+S	java:S106U"9Replace this use of System.out or System.err by a logger.(Á”®æøÿÿÿÿ
+N	java:S106X"9Replace this use of System.out or System.err by a logger.(İµü€
+e
+java:S1192"JDefine a constant instead of duplicating this literal "localhost" 3 times.(Õ»ƒ¢şÿÿÿÿ
+6
+java:S1700"Rename field "loadbalancer"(Õ©¸ìÿÿÿÿÿ
+j
+java:S2095@"OUse try-with-resources or close this "ObjectInputStream" in a "finally" clause.(Ÿóãçşÿÿÿÿ
+j
+java:S2095P"OUse try-with-resources or close this "ObjectInputStream" in a "finally" clause.(ä°¨Œùÿÿÿÿ
+f
+java:S2095D"PUse try-with-resources or close this "ObjectOutputStream" in a "finally" clause.(…˜Å
+k
+java:S2095O"PUse try-with-resources or close this "ObjectOutputStream" in a "finally" clause.(İš›Èÿÿÿÿÿ
+k
+java:S2095?"PUse try-with-resources or close this "ObjectOutputStream" in a "finally" clause.(°Ç½üÿÿÿÿ
+=
+java:S2189)""Add an end condition to this loop.(˜ïˆÿÿÿÿÿ

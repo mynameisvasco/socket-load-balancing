@@ -10,10 +10,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Monitor {
     private ServerSocket serverSocket;
     private Socket clientSocket;
+    private final Lock serverStatesLock;
     private final List<ServerState> serverStates;
     private final ClusterStatusTableModel clusterStatusTableModel;
     private final RequestStatusTableModel requestStatusTableModel;
@@ -22,6 +25,7 @@ public class Monitor {
 
     public Monitor(int port) {
         this.port = port;
+        this.serverStatesLock = new ReentrantLock();
         this.serverStates = new LinkedList<>();
         clusterStatusTableModel = new ClusterStatusTableModel();
         requestStatusTableModel = new RequestStatusTableModel();
@@ -56,7 +60,10 @@ public class Monitor {
 
             switch (message.getCode()) {
                 case RegisterServer -> {
+                    serverStatesLock.lock();
+                    serverStates.add(new ServerState(client.getInetAddress(), client.getPort(), message.getServerId(), 0));
                     clusterStatusTableModel.addServer(message, client);
+                    serverStatesLock.unlock();
                     System.out.printf("Server with ID %d on %s:%d registered on monitor\n", message.getServerId(), client.getInetAddress().getHostAddress(), client.getPort());
                 }
                 case RegisterLoadBalancer -> {
@@ -64,11 +71,29 @@ public class Monitor {
                     System.out.printf("Load balancer with ID %d on %s:%d registered on monitor\n", message.getServerId(), client.getInetAddress().getHostAddress(), client.getPort());
                 }
                 case RegisterRequest -> {
+                    serverStatesLock.lock();
+
+                    serverStates.forEach(s -> {
+                        if(s.getServerId() == message.getServerId())  {
+                            s.increaseTotalNumberOfIterations(message.getNumberOfIterations());
+                        }
+                    });
+
                     requestStatusTableModel.addRequest(message, client);
+                    serverStatesLock.unlock();
                     output.writeObject(serverStates);
                 }
                 case UpdateRequest -> {
+                    serverStatesLock.lock();
+
+                    serverStates.forEach(s -> {
+                        if(s.getServerId() == message.getServerId())  {
+                            s.decreaseTotalNumberOfIterations(message.getNumberOfIterations());
+                        }
+                    });
+
                     requestStatusTableModel.updateRequest(message.getRequestId(), message.getStatus());
+                    serverStatesLock.unlock();
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
