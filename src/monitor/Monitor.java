@@ -11,6 +11,7 @@ import java.io.ObjectOutputStream;
 import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
@@ -69,14 +70,18 @@ public class Monitor {
             switch (message.getCode()) {
                 case RegisterServer -> {
                     serverStatesLock.lock();
-                    serverStates.add(new ServerState(client.getInetAddress(), client.getPort(), message.getServerId()));
-                    clusterStatusTableModel.addServer(message, client);
+                    serverStates.add(new ServerState(client.getInetAddress(), message.getSocketInfo().port(),
+                            message.getServerId()));
+                    clusterStatusTableModel.addServer(message);
                     serverStatesLock.unlock();
-                    System.out.printf("Server with ID %d on %s:%d registered on monitor\n", message.getServerId(), client.getInetAddress().getHostAddress(), client.getPort());
+                    System.out.printf("Server with ID %d on %s:%d registered on monitor\n", message.getServerId(),
+                            client.getInetAddress().getHostAddress(), message.getSocketInfo().port());
                 }
                 case RegisterLoadBalancer -> {
-                    clusterStatusTableModel.addLoadbalancer(message, client);
-                    System.out.printf("Load balancer with ID %d on %s:%d registered on monitor\n", message.getServerId(), client.getInetAddress().getHostAddress(), client.getPort());
+                    clusterStatusTableModel.addLoadbalancer(message);
+                    System.out.printf("Load balancer with ID %d on %s:%d registered on monitor\n",
+                            message.getServerId(), client.getInetAddress().getHostAddress(),
+                            message.getSocketInfo().port());
                     heartBeat(message.getServerId(), message.getSocketInfo(), message.getCode());
                 }
                 case RegisterRequest -> {
@@ -120,13 +125,14 @@ public class Monitor {
     }
 
     private void heartBeat(int id, SocketInfo socketInfo, MessageCodes originalMessageCode) {
+
         int nrHeartBeatsFailed = 0;
         while (nrHeartBeatsFailed < nrHeartBeatTries) {
             try {
                 Thread.sleep(heartBeatInterval);
             } catch (InterruptedException ignored) {};
             try {
-                var loadBalancer = socketInfo.createSocket();
+                var loadBalancer = clusterStatusTableModel.getInfoById(id).createSocket();
                 var output = new ObjectOutputStream(loadBalancer.getOutputStream());
                 var input = new ObjectInputStream(loadBalancer.getInputStream());
                 var heartBeatMessage = new Message(0, 0, 0, MessageCodes.HeartBeat,
@@ -134,19 +140,46 @@ public class Monitor {
                 output.writeObject(heartBeatMessage);
                 output.flush();
                 loadBalancer.close();
-            } catch (ConnectException e) {
+            } catch (SocketException e) {
                 nrHeartBeatsFailed++;
             }
             catch (IOException e) {
                 e.printStackTrace();
             }
         }
+
         if (originalMessageCode == MessageCodes.RegisterLoadBalancer) {
-            clusterStatusTableModel.markLoadBalancerDown(id);
-            System.out.printf("Load balancer with ID %d at %s:%d failed to provide a heart beat too many times and was " +
-                    "marked as down\n", id, socketInfo.address(), socketInfo.port());
+            handleLoadBalancerCrash(id, socketInfo);
         } else if (originalMessageCode == MessageCodes.RegisterServer) {
-            // server crash handling code
+            // server crash handling
+
+        }
+    }
+
+    private void handleLoadBalancerCrash(int id, SocketInfo socketInfo) {
+        SocketInfo crashedLoadBalancerInfo = clusterStatusTableModel.markLoadBalancerDown(id);
+        System.out.printf("Load balancer with ID %d at %s:%d failed to provide a heart beat too many times and " +
+                "was marked as down\n", id, socketInfo.address(), socketInfo.port());
+        if (!clusterStatusTableModel.activeLoadBalancerExists()) {
+            var loadBalancerToPromoteInfo =
+                    clusterStatusTableModel.markLoadBalancerPromotion(crashedLoadBalancerInfo);
+            try {
+                var loadBalancerToPromote = loadBalancerToPromoteInfo.createSocket();
+                var output = new ObjectOutputStream(loadBalancerToPromote.getOutputStream());
+                var input = new ObjectInputStream(loadBalancerToPromote.getInputStream());
+                var promoteMessage = new Message(0, 0, id, MessageCodes.PromoteLoadBalancer,
+                        0, 0, 0,
+                        new SocketInfo("localhost", crashedLoadBalancerInfo.port()), "");
+                output.writeObject(promoteMessage);
+                output.flush();
+                System.out.printf("Promoted load balancer at %s:%d\n", loadBalancerToPromoteInfo.address(),
+                        loadBalancerToPromoteInfo.port());
+                loadBalancerToPromote.close();
+            } catch (IOException e) {
+                System.err.printf("Failed promotion to primary for load balancer at %s:%d\n",
+                        loadBalancerToPromoteInfo.address(), loadBalancerToPromoteInfo.port());
+                e.printStackTrace();
+            }
         }
     }
 }

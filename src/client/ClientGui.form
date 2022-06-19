@@ -55,7 +55,7 @@
               </grid>
             </constraints>
             <properties>
-              <text value="localhost:15999"/>
+              <text value="localhost:8000"/>
             </properties>
           </component>
           <component id="29e01" class="javax.swing.JButton" binding="connectButton">

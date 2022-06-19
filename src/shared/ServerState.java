@@ -1,11 +1,12 @@
 package shared;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public class ServerState {
+public class ServerState implements Serializable {
     private final InetAddress address;
     private final int port;
     private final int serverId;
