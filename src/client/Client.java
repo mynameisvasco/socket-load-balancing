@@ -26,6 +26,8 @@ public class Client {
             }
 
             this.receiver = new ServerSocket(receiverPort);
+            var receiverThread = new Thread(this::responseReceiver);
+            receiverThread.start();
         } catch (IOException e) {
             System.err.printf("Failed to create receiver socket at port %d\n", receiverPort);
             e.printStackTrace();
@@ -45,9 +47,7 @@ public class Client {
 
         pendingRequestsTableModel.addRequest(request);
         var senderThread = new Thread(() -> requestSender(request));
-        var receiverThread = new Thread(this::responseReceiver);
         senderThread.start();
-        receiverThread.start();
         requestCount++;
     }
 
@@ -67,33 +67,28 @@ public class Client {
         try {
             var loadbalancer = loadBalancerInfo.createSocket();
             var output = new ObjectOutputStream(loadbalancer.getOutputStream());
-            var input = new ObjectInputStream(loadbalancer.getInputStream());
             output.writeObject(request);
             output.flush();
             System.out.printf("Request sent %s\n", request.getRequestId());
-            var response = (Message) input.readObject();
-            System.out.printf("Response received %s\n", response.getRequestId());
-            responsesTableModel.addResponse(response);
-            loadbalancer.close();
         } catch (IOException e) {
             System.err.printf("Failed to send request %s\n", request.getRequestId());
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
         }
     }
 
     private void responseReceiver() {
-        try {
-            var sender = receiver.accept();
-            var input = new ObjectInputStream(sender.getInputStream());
-            var response = (Message) input.readObject();
-            System.out.printf("Response received %s\n", response.getRequestId());
-            responsesTableModel.addResponse(response);
-            sender.close();
-        } catch (IOException e) {
-            System.err.println("Failed to receive response");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+        while (true) {
+            try {
+                var sender = receiver.accept();
+                var input = new ObjectInputStream(sender.getInputStream());
+                var response = (Message) input.readObject();
+                System.out.printf("Response received %s\n", response.getRequestId());
+                responsesTableModel.addResponse(response);
+                sender.close();
+            } catch (IOException e) {
+                System.err.println("Failed to receive response");
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

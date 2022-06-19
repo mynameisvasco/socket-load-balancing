@@ -23,7 +23,7 @@ public class Server {
 
     public Server(int id, int port) {
         this.id = id;
-        this.port = 8999 + id;
+        this.port = port;
         this.monitorInfo = new SocketInfo("localhost", 6999);
 
         try {
@@ -37,6 +37,7 @@ public class Server {
 
     public void listen() {
         System.out.printf("Server listen on port %s\n", port);
+        this.registerServer();
 
         for (int i = 0; i < 3; i++) {
             var thread = new Thread(this::responseSender);
@@ -50,9 +51,21 @@ public class Server {
                 new ObjectOutputStream(client.getOutputStream());
                 var input = new ObjectInputStream(client.getInputStream());
                 var request = (Message) input.readObject();
+
+                if(request.getCode() == MessageCodes.HeartBeat) {
+                    client.close();
+                    continue;
+                }
+
                 System.out.printf("Request received from %s\n", clientInfo);
 
-                if (canDoIterations(request.getNumberOfIterations())) {
+                if (!canDoIterations(request.getNumberOfIterations())) {
+                    var monitor = monitorInfo.createSocket();
+                    var monitorOutput = new ObjectOutputStream(monitor.getOutputStream());
+                    var updateRequestMessage = request.copyWithCode(MessageCodes.UpdateRequest, "Rejected");
+                    updateRequestMessage.setServerId(id);
+                    monitorOutput.writeObject(updateRequestMessage);
+                    monitorOutput.flush();
                     var receiver = request.getSocketInfo().createSocket();
                     var output = new ObjectOutputStream(receiver.getOutputStream());
                     System.out.printf("Request rejected because server has more than 20 iterations %s\n", request);
@@ -66,6 +79,12 @@ public class Server {
                 var acceptedRequest = pendingRequests.enqueue(request);
 
                 if (!acceptedRequest) {
+                    var monitor = monitorInfo.createSocket();
+                    var monitorOutput = new ObjectOutputStream(monitor.getOutputStream());
+                    var updateRequestMessage = request.copyWithCode(MessageCodes.UpdateRequest, "Rejected");
+                    updateRequestMessage.setServerId(id);
+                    monitorOutput.writeObject(updateRequestMessage);
+                    monitorOutput.flush();
                     var receiver = request.getSocketInfo().createSocket();
                     var output = new ObjectOutputStream(receiver.getOutputStream());
                     System.out.printf("Request rejected because server has 3 pending requests %s\n", request);
@@ -75,7 +94,7 @@ public class Server {
                     receiver.close();
                 }
 
-                addIterations(request.getNumberOfIterations());
+                client.close();
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -86,6 +105,12 @@ public class Server {
         while (true) {
             var request = pendingRequests.dequeue();
             try {
+                var monitor = monitorInfo.createSocket();
+                var monitorOutput = new ObjectOutputStream(monitor.getOutputStream());
+                var updateRequestMessage = request.copyWithCode(MessageCodes.UpdateRequest, "Processing");
+                updateRequestMessage.setServerId(id);
+                monitorOutput.writeObject(updateRequestMessage);
+                monitorOutput.flush();
                 var receiver = request.getSocketInfo().createSocket();
                 addIterations(request.getNumberOfIterations());
                 var pi = truncateTo(Math.PI, request.getNumberOfIterations());
@@ -99,12 +124,12 @@ public class Server {
 
                 var output = new ObjectOutputStream(receiver.getOutputStream());
                 output.writeObject(request);
+                output.flush();
                 System.out.printf("Response sent to %s\n", String.format("%s:%d", receiver.getInetAddress().getHostAddress(), receiver.getPort()));
-                receiver.close();
-                var monitor = monitorInfo.createSocket();
-                var monitorOutput = new ObjectOutputStream(monitor.getOutputStream());
-                monitorOutput.writeObject(request.copyWithCode(MessageCodes.UpdateRequest, "completed"));
-                monitor.close();
+                monitor = monitorInfo.createSocket();
+                monitorOutput = new ObjectOutputStream(monitor.getOutputStream());
+                monitorOutput.writeObject(updateRequestMessage.copyWithCode(MessageCodes.UpdateRequest, "Completed"));
+                monitorOutput.flush();
             } catch (IOException | InterruptedException e) {
                 System.err.printf("Failed to respond to request %s\n", request);
                 e.printStackTrace();
@@ -129,7 +154,7 @@ public class Server {
     private boolean canDoIterations(int numberOfIterations) {
         try {
             totalIterationsLock.lock();
-            return totalIterations + numberOfIterations > 20;
+            return totalIterations + numberOfIterations <= 20;
         } finally {
             totalIterationsLock.unlock();
         }
@@ -157,12 +182,6 @@ public class Server {
             System.err.printf("Failed to register server on monitor at %s:%d\n", monitorInfo.address(),
                     monitorInfo.port());
         }
-    }
-
-    public static void main(String[] args) {
-        var server = new Server(1, 9000);
-        server.registerServer();
-        server.listen();
     }
 }
 

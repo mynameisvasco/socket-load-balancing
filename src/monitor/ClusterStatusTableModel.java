@@ -29,24 +29,87 @@ public class ClusterStatusTableModel extends DefaultTableModel {
         return activeLoadBalancerExists;
     }
 
+    public void increaseNumberOfIterations(Message message) {
+        int i = 0;
+
+        while (i < getRowCount() &&!(dataVector.get(i).get(1).toString().equals(String.valueOf(message.getServerId())))) {
+            i++;
+        }
+
+        if(i != getRowCount()) {
+            dataVector.get(i).set(5, Integer.parseInt(dataVector.get(i).get(5).toString()) + message.getNumberOfIterations());
+            fireTableDataChanged();
+        }
+    }
+
+    public void decreaseNumberOfIterations(Message message) {
+        int i = 0;
+
+        while (i < getRowCount() &&!(dataVector.get(i).get(1).toString().equals(String.valueOf(message.getServerId())))) {
+            i++;
+        }
+
+        if(i != getRowCount()) {
+            dataVector.get(i).set(5, Integer.parseInt(dataVector.get(i).get(5).toString()) - message.getNumberOfIterations());
+            fireTableDataChanged();
+        }
+    }
+
     public void addServer(Message request) {
-        addRow(new Object[]{"Server", request.getServerId(), request.getSocketInfo().address(),
-                request.getSocketInfo().port(), "UP", 0});
+        int i = 0;
+        while (i < getRowCount() &&!(dataVector.get(i).get(1).toString().equals(String.valueOf(request.getServerId())))) {
+            i++;
+        }
+
+        if(i != getRowCount()) {
+            dataVector.get(i).set(4, "UP");
+            fireTableDataChanged();
+        } else {
+            addRow(new Object[]{"Server", request.getServerId(), request.getSocketInfo().address(),
+                    request.getSocketInfo().port(), "UP", 0});
+        }
+    }
+
+    public void downServer(int id) {
+        int i = 0;
+        while (i < getRowCount() &&!(dataVector.get(i).get(1).toString().equals(String.valueOf(id)))) {
+            i++;
+        }
+
+        dataVector.get(i).set(4, "DOWN");
+        dataVector.get(i).set(5, "0");
+        fireTableDataChanged();
     }
 
     public void addLoadbalancer(Message request) {
+        int i = 0;
+
+        while (i < getRowCount() &&!(dataVector.get(i).get(1).toString().equals(String.valueOf(request.getServerId())))) {
+            i++;
+        }
+
         String type;
         if (activeLoadBalancerExists()) type = "Secondary LB";
         else type = "Primary LB";
-        addRow(new Object[]{type, request.getServerId(), request.getSocketInfo().address(),
-                request.getSocketInfo().port(), "UP", "-"});
+
+        if(i == getRowCount()) {
+            addRow(new Object[]{type, request.getServerId(), request.getSocketInfo().address(),
+                    request.getSocketInfo().port(), "UP", "-"});
+        }
+        else {
+            dataVector.get(i).set(0, type);
+            dataVector.get(i).set(4, "UP");
+            fireTableDataChanged();
+        }
     }
 
     public SocketInfo markLoadBalancerDown(int loadBalancerID) {
         int i = 0;
+
         while (i < getRowCount() &&!(dataVector.get(i).get(1).toString().equals(String.valueOf(loadBalancerID)))) {
             i++;
         }
+
         dataVector.get(i).set(0, "LB");
         dataVector.get(i).set(4, "DOWN");
         fireTableDataChanged();
@@ -57,16 +120,16 @@ public class ClusterStatusTableModel extends DefaultTableModel {
 
     public SocketInfo markLoadBalancerPromotion(SocketInfo crashedLoadBalancerInfo) {
         int i = 0;
-        while (i < getRowCount() &&!(dataVector.get(i).get(0).toString().equals("Secondary LB") &&
-                                     dataVector.get(i).get(4).toString().equals("UP"))) {
+
+       while (i < getRowCount() && !(dataVector.get(i).get(0).toString().equals("Secondary LB") && dataVector.get(i).get(4).toString().equals("UP"))) {
             i++;
         }
+
         dataVector.get(i).set(0, "Primary LB");
         int loadBalancerToPromotePort = Integer.parseInt(dataVector.get(i).get(3).toString());
         dataVector.get(i).set(3, crashedLoadBalancerInfo.port());
         fireTableDataChanged();
-        return new SocketInfo(dataVector.get(i).get(2).toString(),
-                              loadBalancerToPromotePort);
+        return new SocketInfo(dataVector.get(i).get(2).toString(), loadBalancerToPromotePort);
     }
 
     public SocketInfo getInfoById(int id) {

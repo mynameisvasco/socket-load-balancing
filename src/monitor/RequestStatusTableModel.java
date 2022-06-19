@@ -26,5 +26,7 @@ public class RequestStatusTableModel extends DefaultTableModel {
                 dataVector.get(i).set(4, status);
             }
         }
+
+        fireTableDataChanged();
     }
 }

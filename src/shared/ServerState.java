@@ -2,19 +2,15 @@ package shared;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 
 public class ServerState implements Serializable {
-    private final InetAddress address;
-    private final int port;
+    private final SocketInfo socketInfo;
     private final int serverId;
     private int totalNumberOfIterations;
 
-    public ServerState(InetAddress address, int port, int serverId) {
-        this.address = address;
-        this.port = port;
+    public ServerState(SocketInfo socketInfo, int serverId) {
+        this.socketInfo = socketInfo;
         this.serverId = serverId;
         this.totalNumberOfIterations = 0;
     }
@@ -35,19 +31,14 @@ public class ServerState implements Serializable {
         totalNumberOfIterations += value;
     }
 
-    public Socket createSocket() {
-        var socket = new Socket();
-
+    public Socket createSocket()  {
         try {
-            socket.connect(new InetSocketAddress(address, port));
-            return socket;
+            return socketInfo.createSocket();
         } catch (IOException e) {
-            System.err.printf("Failed to create socket for %s:%s\n", address, port);
-            System.exit(-1);
             e.printStackTrace();
         }
 
-        return socket;
+        return null;
     }
 
 }

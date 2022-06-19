@@ -1,9 +1,6 @@
 package monitor;
 
-import shared.Message;
-import shared.MessageCodes;
-import shared.ServerState;
-import shared.SocketInfo;
+import shared.*;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -12,10 +9,10 @@ import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 public class Monitor {
     private ServerSocket serverSocket;
@@ -23,21 +20,21 @@ public class Monitor {
     private final List<ServerState> serverStates;
     private final ClusterStatusTableModel clusterStatusTableModel;
     private final RequestStatusTableModel requestStatusTableModel;
-
-    // configuration variables
-    private int port;
-    private int nrHeartBeatTries;
-    private int heartBeatInterval;  // in miliseconds
+    private final Map<Integer, Message> pendingMessages;
+    private final int port;
+    private final int nrHeartBeatTries;
+    private final int heartBeatInterval;  // in miliseconds
 
     public Monitor(int port) {
         this.port = port;
         this.nrHeartBeatTries = 1;
         this.heartBeatInterval = 1000;
-
+        this.pendingMessages = new HashMap<>();
         this.serverStatesLock = new ReentrantLock();
         this.serverStates = new LinkedList<>();
         clusterStatusTableModel = new ClusterStatusTableModel();
         requestStatusTableModel = new RequestStatusTableModel();
+
         try {
             serverSocket = new ServerSocket(port);
         } catch (IOException e) {
@@ -70,29 +67,23 @@ public class Monitor {
             switch (message.getCode()) {
                 case RegisterServer -> {
                     serverStatesLock.lock();
-                    serverStates.add(new ServerState(client.getInetAddress(), message.getSocketInfo().port(),
-                            message.getServerId()));
+                    serverStates.add(new ServerState(message.getSocketInfo(), message.getServerId()));
                     clusterStatusTableModel.addServer(message);
                     serverStatesLock.unlock();
-                    System.out.printf("Server with ID %d on %s:%d registered on monitor\n", message.getServerId(),
-                            client.getInetAddress().getHostAddress(), message.getSocketInfo().port());
+                    System.out.printf("Server with ID %d on %s registered on monitor\n", message.getServerId(), message.getSocketInfo());
+                    heartBeat(message.getServerId(), message.getSocketInfo(), message.getCode());
                 }
                 case RegisterLoadBalancer -> {
+                    serverStatesLock.lock();
                     clusterStatusTableModel.addLoadbalancer(message);
                     System.out.printf("Load balancer with ID %d on %s:%d registered on monitor\n",
                             message.getServerId(), client.getInetAddress().getHostAddress(),
                             message.getSocketInfo().port());
+                    serverStatesLock.unlock();
                     heartBeat(message.getServerId(), message.getSocketInfo(), message.getCode());
                 }
                 case RegisterRequest -> {
                     serverStatesLock.lock();
-
-                    serverStates.forEach(s -> {
-                        if(s.getServerId() == message.getServerId())  {
-                            s.increaseTotalNumberOfIterations(message.getNumberOfIterations());
-                        }
-                    });
-
                     requestStatusTableModel.addRequest(message, client);
                     serverStatesLock.unlock();
                     output.writeObject(serverStates);
@@ -100,16 +91,32 @@ public class Monitor {
                 case UpdateRequest -> {
                     serverStatesLock.lock();
 
-                    serverStates.forEach(s -> {
-                        if(s.getServerId() == message.getServerId())  {
-                            s.decreaseTotalNumberOfIterations(message.getNumberOfIterations());
-                        }
-                    });
+                    if(message.getStatus().equals("Processing")) {
+                        pendingMessages.put(message.getRequestId(), message);
+                        serverStates.forEach(s -> {
+                            if(s.getServerId() == message.getServerId())  {
+                                clusterStatusTableModel.increaseNumberOfIterations(message);
+                                s.increaseTotalNumberOfIterations(message.getNumberOfIterations());
+                            }
+                        });
+                    } else if(message.getStatus().equals("Completed")) {
+                        pendingMessages.remove(message.getRequestId());
+                        serverStates.forEach(s -> {
+                            if(s.getServerId() == message.getServerId())  {
+                                clusterStatusTableModel.decreaseNumberOfIterations(message);
+                                s.decreaseTotalNumberOfIterations(message.getNumberOfIterations());
+                            }
+                        });
+                    } else if(message.getStatus().equals("Rejected")) {
+                        pendingMessages.remove(message.getRequestId());
+                    }
 
                     requestStatusTableModel.updateRequest(message.getRequestId(), message.getStatus());
                     serverStatesLock.unlock();
                 }
             }
+
+            client.close();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -127,23 +134,18 @@ public class Monitor {
     private void heartBeat(int id, SocketInfo socketInfo, MessageCodes originalMessageCode) {
 
         int nrHeartBeatsFailed = 0;
+
         while (nrHeartBeatsFailed < nrHeartBeatTries) {
             try {
                 Thread.sleep(heartBeatInterval);
-            } catch (InterruptedException ignored) {};
-            try {
-                var loadBalancer = clusterStatusTableModel.getInfoById(id).createSocket();
-                var output = new ObjectOutputStream(loadBalancer.getOutputStream());
-                var input = new ObjectInputStream(loadBalancer.getInputStream());
-                var heartBeatMessage = new Message(0, 0, 0, MessageCodes.HeartBeat,
-                        0, 0, 0, null, "");
+                var server = clusterStatusTableModel.getInfoById(id).createSocket();
+                var output = new ObjectOutputStream(server.getOutputStream());
+                var heartBeatMessage = new Message(0, 0, 0, MessageCodes.HeartBeat, 0, 0, 0, null, "");
                 output.writeObject(heartBeatMessage);
                 output.flush();
-                loadBalancer.close();
             } catch (SocketException e) {
                 nrHeartBeatsFailed++;
-            }
-            catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -151,18 +153,17 @@ public class Monitor {
         if (originalMessageCode == MessageCodes.RegisterLoadBalancer) {
             handleLoadBalancerCrash(id, socketInfo);
         } else if (originalMessageCode == MessageCodes.RegisterServer) {
-            // server crash handling
-
+            handleServerCrash(id, socketInfo);
         }
     }
 
     private void handleLoadBalancerCrash(int id, SocketInfo socketInfo) {
-        SocketInfo crashedLoadBalancerInfo = clusterStatusTableModel.markLoadBalancerDown(id);
-        System.out.printf("Load balancer with ID %d at %s:%d failed to provide a heart beat too many times and " +
-                "was marked as down\n", id, socketInfo.address(), socketInfo.port());
-        if (!clusterStatusTableModel.activeLoadBalancerExists()) {
-            var loadBalancerToPromoteInfo =
-                    clusterStatusTableModel.markLoadBalancerPromotion(crashedLoadBalancerInfo);
+        var crashedLoadBalancerInfo = clusterStatusTableModel.markLoadBalancerDown(id);
+        System.out.printf("Load balancer with ID %d at %s:%d failed to provide a heart beat too many times and was marked as down\n", id, socketInfo.address(), socketInfo.port());
+
+      if (!clusterStatusTableModel.activeLoadBalancerExists()) {
+            var loadBalancerToPromoteInfo = clusterStatusTableModel.markLoadBalancerPromotion(crashedLoadBalancerInfo);
+
             try {
                 var loadBalancerToPromote = loadBalancerToPromoteInfo.createSocket();
                 var output = new ObjectOutputStream(loadBalancerToPromote.getOutputStream());
@@ -180,6 +181,34 @@ public class Monitor {
                         loadBalancerToPromoteInfo.address(), loadBalancerToPromoteInfo.port());
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void handleServerCrash(int id, SocketInfo socketInfo) {
+        clusterStatusTableModel.downServer(id);
+        var messages = pendingMessages.values()
+                .stream()
+                .filter(m -> m.getServerId() == id)
+                .collect(Collectors.toList());
+
+        var orderServerStates = serverStates.stream()
+                .sorted(Comparator.comparingInt(ServerState::getTotalNumberOfIterations))
+                .collect(Collectors.toList());
+
+        var index = 0;
+
+        for (var message: messages) {
+            var server = orderServerStates.get(index % orderServerStates.size()).createSocket();
+
+            try {
+                var output = new ObjectOutputStream(server.getOutputStream());
+                output.writeObject(message);
+                output.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            index++;
         }
     }
 }

@@ -16,11 +16,15 @@ public class Fifo<T extends IPriorityItem> {
         this.size = size;
     }
 
+    public Fifo() {
+        this.size = -1;
+    }
+
     public boolean enqueue(T item) {
         try {
             lock.lock();
 
-            if (list.size() == size) {
+            if (size != -1 && list.size() == size) {
                 return false;
             }
 

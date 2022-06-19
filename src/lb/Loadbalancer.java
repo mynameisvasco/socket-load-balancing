@@ -42,20 +42,21 @@ public class Loadbalancer {
                 new ObjectOutputStream(client.getOutputStream());
                 var input = new ObjectInputStream(client.getInputStream());
                 var message = (Message) input.readObject();
+
                 switch (message.getCode()) {
-                    case PiCalculationRequest:
-                        System.out.printf("Request received from %s:%d\n", client.getInetAddress().getHostAddress(),
-                                client.getPort());
+                    case PiCalculationRequest -> {
+                        System.out.printf("Request received from %s:%d\n", client.getInetAddress().getHostAddress(), client.getPort());
                         var thread = new Thread(() -> requestHandler(message));
                         thread.start();
-                        break;
-                    case HeartBeat:
-                        break;
-                    case PromoteLoadBalancer:
+                    }
+                    case PromoteLoadBalancer -> {
                         loadBalancer.close();
                         loadBalancer = new ServerSocket(message.getSocketInfo().port());
                         System.out.printf("Promoted to primary and changed to port %d\n", client.getPort());
+                    }
                 }
+
+                client.close();
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -73,14 +74,15 @@ public class Loadbalancer {
             var monitor = monitorInfo.createSocket();
             var monitorOutput = new ObjectOutputStream(monitor.getOutputStream());
             var monitorInput = new ObjectInputStream(monitor.getInputStream());
-            monitorOutput.writeObject(request.copyWithCode(MessageCodes.RegisterRequest, "pending"));
+            monitorOutput.writeObject(request.copyWithCode(MessageCodes.RegisterRequest, "Pending"));
             var serversStates = (LinkedList<ServerState>) monitorInput.readObject();
+            monitorOutput.flush();
             var serverState = getLessLoadServer(serversStates);
             var server = serverState.createSocket();
             var serverOutput = new ObjectOutputStream(server.getOutputStream());
             serverOutput.writeObject(request);
-            System.out.printf("Request redirected to %s:%d\n", server.getInetAddress().getHostAddress(),
-                    server.getPort());
+            serverOutput.flush();
+            System.out.printf("Request redirected to %s:%d\n", server.getInetAddress().getHostAddress(), server.getPort());
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -90,18 +92,12 @@ public class Loadbalancer {
         try {
             var monitor = monitorInfo.createSocket();
             var output = new ObjectOutputStream(monitor.getOutputStream());
-            var input = new ObjectInputStream(monitor.getInputStream());
-            var registerMessage = new Message(0, 0, id, MessageCodes.RegisterLoadBalancer,
-                    0, 0, 0,
-                    new SocketInfo("localhost", port), "pending");
+            var registerMessage = new Message(0, 0, id, MessageCodes.RegisterLoadBalancer, 0, 0, 0, new SocketInfo("localhost", port), "pending");
             output.writeObject(registerMessage);
             output.flush();
-            System.out.printf("Load balancer registered on monitor at %s:%d\n", monitorInfo.address(),
-                    monitorInfo.port());
-            monitor.close();
+            System.out.printf("Load balancer registered on monitor at %s:%d\n", monitorInfo.address(), monitorInfo.port());
         } catch (IOException e) {
-            System.err.printf("Failed to register load balancer on monitor at %s:%d\n", monitorInfo.address(),
-                    monitorInfo.port());
+            System.err.printf("Failed to register load balancer on monitor at %s:%d\n", monitorInfo.address(), monitorInfo.port());
         }
     }
 

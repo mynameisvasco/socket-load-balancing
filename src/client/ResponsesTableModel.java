@@ -15,6 +15,6 @@ public class ResponsesTableModel extends DefaultTableModel {
     }
 
     public void addResponse(Message response) {
-        addRow(new Object[]{response.getRequestId(), response.getServerId(), response.getCode().ordinal(), response.getNumberOfIterations(), response.getPi(), response.getDeadline()});
+        addRow(new Object[]{response.getRequestId(), response.getServerId(), response.getCode(), response.getNumberOfIterations(), response.getPi(), response.getDeadline()});
     }
 }
