@@ -23,12 +23,8 @@ public class ServerState implements Serializable {
         return totalNumberOfIterations;
     }
 
-    public void increaseTotalNumberOfIterations(int value) {
-        totalNumberOfIterations += value;
-    }
-
-    public void decreaseTotalNumberOfIterations(int value) {
-        totalNumberOfIterations += value;
+    public void setTotalNumberOfIterations(int value) {
+        totalNumberOfIterations = value;
     }
 
     public Socket createSocket()  {

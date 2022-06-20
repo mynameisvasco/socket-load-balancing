@@ -48,12 +48,16 @@ public class Server {
             try {
                 var client = server.accept();
                 var clientInfo = String.format("%s:%d", client.getInetAddress().getHostAddress(), client.getPort());
-                new ObjectOutputStream(client.getOutputStream());
+                var output = new ObjectOutputStream(client.getOutputStream());
                 var input = new ObjectInputStream(client.getInputStream());
                 var request = (Message) input.readObject();
 
-                if(request.getCode() == MessageCodes.HeartBeat) {
-                    client.close();
+                if (request.getCode() == MessageCodes.HeartBeat) {
+                    var heartbeatMessage = request.copyWithCode(MessageCodes.HeartBeat, "");
+                    heartbeatMessage.setServerId(id);
+                    heartbeatMessage.setNumberOfIterations(getIterations());
+                    output.writeObject(heartbeatMessage);
+                    output.flush();
                     continue;
                 }
 
@@ -67,12 +71,11 @@ public class Server {
                     monitorOutput.writeObject(updateRequestMessage);
                     monitorOutput.flush();
                     var receiver = request.getSocketInfo().createSocket();
-                    var output = new ObjectOutputStream(receiver.getOutputStream());
+                    var receiverOutput = new ObjectOutputStream(receiver.getOutputStream());
                     System.out.printf("Request rejected because server has more than 20 iterations %s\n", request);
                     request.setServerId(id);
                     request.setCode(MessageCodes.PiCalculationRejection);
-                    output.writeObject(request);
-                    receiver.close();
+                    receiverOutput.writeObject(request);
                     continue;
                 }
 
@@ -86,15 +89,12 @@ public class Server {
                     monitorOutput.writeObject(updateRequestMessage);
                     monitorOutput.flush();
                     var receiver = request.getSocketInfo().createSocket();
-                    var output = new ObjectOutputStream(receiver.getOutputStream());
+                    var receiverOutput = new ObjectOutputStream(receiver.getOutputStream());
                     System.out.printf("Request rejected because server has 3 pending requests %s\n", request);
                     request.setServerId(id);
                     request.setCode(MessageCodes.PiCalculationRejection);
-                    output.writeObject(request);
-                    receiver.close();
+                    receiverOutput.writeObject(request);
                 }
-
-                client.close();
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -155,6 +155,15 @@ public class Server {
         try {
             totalIterationsLock.lock();
             return totalIterations + numberOfIterations <= 20;
+        } finally {
+            totalIterationsLock.unlock();
+        }
+    }
+
+    private int getIterations() {
+        try {
+            totalIterationsLock.lock();
+            return totalIterations;
         } finally {
             totalIterationsLock.unlock();
         }

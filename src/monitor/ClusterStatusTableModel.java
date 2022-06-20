@@ -29,7 +29,7 @@ public class ClusterStatusTableModel extends DefaultTableModel {
         return activeLoadBalancerExists;
     }
 
-    public void increaseNumberOfIterations(Message message) {
+    public void setNumberOfIterations(Message message) {
         int i = 0;
 
         while (i < getRowCount() &&!(dataVector.get(i).get(1).toString().equals(String.valueOf(message.getServerId())))) {
@@ -37,20 +37,7 @@ public class ClusterStatusTableModel extends DefaultTableModel {
         }
 
         if(i != getRowCount()) {
-            dataVector.get(i).set(5, Integer.parseInt(dataVector.get(i).get(5).toString()) + message.getNumberOfIterations());
-            fireTableDataChanged();
-        }
-    }
-
-    public void decreaseNumberOfIterations(Message message) {
-        int i = 0;
-
-        while (i < getRowCount() &&!(dataVector.get(i).get(1).toString().equals(String.valueOf(message.getServerId())))) {
-            i++;
-        }
-
-        if(i != getRowCount()) {
-            dataVector.get(i).set(5, Integer.parseInt(dataVector.get(i).get(5).toString()) - message.getNumberOfIterations());
+            dataVector.get(i).set(5, message.getNumberOfIterations());
             fireTableDataChanged();
         }
     }

@@ -82,6 +82,8 @@ public class Loadbalancer {
             var serverOutput = new ObjectOutputStream(server.getOutputStream());
             serverOutput.writeObject(request);
             serverOutput.flush();
+            server.close();
+            monitor.close();
             System.out.printf("Request redirected to %s:%d\n", server.getInetAddress().getHostAddress(), server.getPort());
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -95,6 +97,7 @@ public class Loadbalancer {
             var registerMessage = new Message(0, 0, id, MessageCodes.RegisterLoadBalancer, 0, 0, 0, new SocketInfo("localhost", port), "pending");
             output.writeObject(registerMessage);
             output.flush();
+            monitor.close();
             System.out.printf("Load balancer registered on monitor at %s:%d\n", monitorInfo.address(), monitorInfo.port());
         } catch (IOException e) {
             System.err.printf("Failed to register load balancer on monitor at %s:%d\n", monitorInfo.address(), monitorInfo.port());

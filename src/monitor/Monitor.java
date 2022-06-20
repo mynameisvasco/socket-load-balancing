@@ -91,24 +91,10 @@ public class Monitor {
                 case UpdateRequest -> {
                     serverStatesLock.lock();
 
-                    if(message.getStatus().equals("Processing")) {
-                        pendingMessages.put(message.getRequestId(), message);
-                        serverStates.forEach(s -> {
-                            if(s.getServerId() == message.getServerId())  {
-                                clusterStatusTableModel.increaseNumberOfIterations(message);
-                                s.increaseTotalNumberOfIterations(message.getNumberOfIterations());
-                            }
-                        });
-                    } else if(message.getStatus().equals("Completed")) {
-                        pendingMessages.remove(message.getRequestId());
-                        serverStates.forEach(s -> {
-                            if(s.getServerId() == message.getServerId())  {
-                                clusterStatusTableModel.decreaseNumberOfIterations(message);
-                                s.decreaseTotalNumberOfIterations(message.getNumberOfIterations());
-                            }
-                        });
-                    } else if(message.getStatus().equals("Rejected")) {
-                        pendingMessages.remove(message.getRequestId());
+                    switch (message.getStatus()) {
+                        case "Processing" -> pendingMessages.put(message.getRequestId(), message);
+                        case "Completed" -> pendingMessages.remove(message.getRequestId());
+                        case "Rejected" -> pendingMessages.remove(message.getRequestId());
                     }
 
                     requestStatusTableModel.updateRequest(message.getRequestId(), message.getStatus());
@@ -116,7 +102,6 @@ public class Monitor {
                 }
             }
 
-            client.close();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -140,12 +125,25 @@ public class Monitor {
                 Thread.sleep(heartBeatInterval);
                 var server = clusterStatusTableModel.getInfoById(id).createSocket();
                 var output = new ObjectOutputStream(server.getOutputStream());
+                var input = new ObjectInputStream(server.getInputStream());
                 var heartBeatMessage = new Message(0, 0, 0, MessageCodes.HeartBeat, 0, 0, 0, null, "");
-                output.writeObject(heartBeatMessage);
-                output.flush();
+
+                if(originalMessageCode == MessageCodes.RegisterServer) {
+                    output.writeObject(heartBeatMessage);
+                    output.flush();
+                    var message = (Message) input.readObject();
+                    System.out.println(message.getNumberOfIterations());
+                    clusterStatusTableModel.setNumberOfIterations(message);
+                    serverStates.forEach(s -> {
+                        if (s.getServerId() == message.getServerId()) {
+                            s.setTotalNumberOfIterations(message.getNumberOfIterations());
+                        }
+                    });
+                }
+                server.close();
             } catch (SocketException e) {
                 nrHeartBeatsFailed++;
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException | InterruptedException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
@@ -189,11 +187,11 @@ public class Monitor {
         var messages = pendingMessages.values()
                 .stream()
                 .filter(m -> m.getServerId() == id)
-                .collect(Collectors.toList());
+                .toList();
 
         var orderServerStates = serverStates.stream()
                 .sorted(Comparator.comparingInt(ServerState::getTotalNumberOfIterations))
-                .collect(Collectors.toList());
+                .toList();
 
         var index = 0;
 
@@ -204,6 +202,7 @@ public class Monitor {
                 var output = new ObjectOutputStream(server.getOutputStream());
                 output.writeObject(message);
                 output.flush();
+
             } catch (IOException e) {
                 e.printStackTrace();
             }

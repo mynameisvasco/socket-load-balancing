@@ -70,6 +70,7 @@ public class Client {
             output.writeObject(request);
             output.flush();
             System.out.printf("Request sent %s\n", request.getRequestId());
+            loadbalancer.close();
         } catch (IOException e) {
             System.err.printf("Failed to send request %s\n", request.getRequestId());
         }
