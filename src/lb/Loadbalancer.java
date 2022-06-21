@@ -55,8 +55,6 @@ public class Loadbalancer {
                         System.out.printf("Promoted to primary and changed to port %d\n", client.getPort());
                     }
                 }
-
-                client.close();
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }

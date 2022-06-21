@@ -127,10 +127,10 @@ public class Monitor {
                 var output = new ObjectOutputStream(server.getOutputStream());
                 var input = new ObjectInputStream(server.getInputStream());
                 var heartBeatMessage = new Message(0, 0, 0, MessageCodes.HeartBeat, 0, 0, 0, null, "");
+                output.writeObject(heartBeatMessage);
+                output.flush();
 
-                if(originalMessageCode == MessageCodes.RegisterServer) {
-                    output.writeObject(heartBeatMessage);
-                    output.flush();
+                if (originalMessageCode == MessageCodes.RegisterServer) {
                     var message = (Message) input.readObject();
                     System.out.println(message.getNumberOfIterations());
                     clusterStatusTableModel.setNumberOfIterations(message);
@@ -159,7 +159,7 @@ public class Monitor {
         var crashedLoadBalancerInfo = clusterStatusTableModel.markLoadBalancerDown(id);
         System.out.printf("Load balancer with ID %d at %s:%d failed to provide a heart beat too many times and was marked as down\n", id, socketInfo.address(), socketInfo.port());
 
-      if (!clusterStatusTableModel.activeLoadBalancerExists()) {
+        if (!clusterStatusTableModel.activeLoadBalancerExists()) {
             var loadBalancerToPromoteInfo = clusterStatusTableModel.markLoadBalancerPromotion(crashedLoadBalancerInfo);
 
             try {
@@ -195,7 +195,7 @@ public class Monitor {
 
         var index = 0;
 
-        for (var message: messages) {
+        for (var message : messages) {
             var server = orderServerStates.get(index % orderServerStates.size()).createSocket();
 
             try {
