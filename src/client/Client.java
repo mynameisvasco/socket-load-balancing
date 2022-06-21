@@ -30,11 +30,6 @@ public class Client {
             }
 
             this.receiver = new ServerSocket(receiverPort);
-
-            for (int i = 0; i < 6; i++) {
-                new Thread(this::responseReceiver).start();
-            }
-
         } catch (IOException e) {
             System.err.printf("Failed to create receiver socket at port %d\n", receiverPort);
             e.printStackTrace();
@@ -59,6 +54,8 @@ public class Client {
                 0, deadline, new SocketInfo("localhost", receiverPort), "pending");
 
         var senderThread = new Thread(() -> requestSender(request));
+        var receiverThread = new Thread(this::responseReceiver);
+        receiverThread.start();
         senderThread.start();
         requestCount++;
     }
@@ -89,7 +86,6 @@ public class Client {
             SwingUtilities.invokeLater(() -> {
                 pendingRequestsTableModel.addRequest(request);
             });
-
             System.out.printf("Request sent %s\n", request.getRequestId());
             loadbalancer.close();
         } catch (IOException e) {
@@ -102,18 +98,17 @@ public class Client {
      * Receives a response from the math service
      */
     private void responseReceiver() {
-        while (true) {
-            try {
-                var sender = receiver.accept();
-                var input = new ObjectInputStream(sender.getInputStream());
-                var response = (Message) input.readObject();
-                System.out.printf("Response received %s\n", response.getRequestId());
-                pendingRequestsTableModel.removeRequest(response);
-                responsesTableModel.addResponse(response);
-                sender.close();
-            } catch (IOException | ClassNotFoundException e) {
-                System.err.println("Failed to receive response " + e.getMessage());
-            }
+        try {
+            var sender = receiver.accept();
+            var input = new ObjectInputStream(sender.getInputStream());
+            var response = (Message) input.readObject();
+            System.out.printf("Response received %s\n", response.getRequestId());
+            pendingRequestsTableModel.removeRequest(response);
+            responsesTableModel.addResponse(response);
+            sender.close();
+        } catch (IOException | ClassNotFoundException e) {
+            responseReceiver();
+            System.err.println("Failed to receive response");
         }
     }
 }
