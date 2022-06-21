@@ -140,7 +140,6 @@ public class Server {
                 updateRequestMessage.setServerId(id);
                 monitorOutput.writeObject(updateRequestMessage);
                 monitorOutput.flush();
-                var receiver = request.getSocketInfo().createSocket();
                 addIterations(request.getNumberOfIterations());
                 var pi = truncateTo(Math.PI, request.getNumberOfIterations());
                 request.setServerId(id);
@@ -151,6 +150,7 @@ public class Server {
                     Thread.sleep(5000);
                 }
 
+                var receiver = request.getSocketInfo().createSocket();
                 serverStateTableModel.removeRequest(request);
                 responsesTableModel.addResponse(request);
                 var output = new ObjectOutputStream(receiver.getOutputStream());
@@ -258,6 +258,5 @@ public class Server {
         return responsesTableModel;
     }
 }
-
 
 
