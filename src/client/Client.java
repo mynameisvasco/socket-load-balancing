@@ -31,7 +31,7 @@ public class Client {
 
             this.receiver = new ServerSocket(receiverPort);
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 6; i++) {
                 new Thread(this::responseReceiver).start();
             }
 
