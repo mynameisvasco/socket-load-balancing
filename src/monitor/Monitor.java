@@ -202,7 +202,7 @@ public class Monitor {
                 var output = new ObjectOutputStream(server.getOutputStream());
                 output.writeObject(message);
                 output.flush();
-
+                output.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
