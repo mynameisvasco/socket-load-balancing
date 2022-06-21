@@ -194,6 +194,10 @@ public class Server {
         }
     }
 
+    /**
+     * Get the current number of active iterations
+     * @return iterations number
+     */
     private int getIterations() {
         try {
             totalIterationsLock.lock();
@@ -203,6 +207,12 @@ public class Server {
         }
     }
 
+    /**
+     * Truncates a number to a specified number of decimal places
+     * @param number Any double
+     * @param places Number of decimal places
+     * @return Truncated number
+     */
     private static double truncateTo(double number, int places) {
         return new BigDecimal(number)
                 .setScale(places, RoundingMode.DOWN)

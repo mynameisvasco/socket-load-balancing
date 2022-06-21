@@ -110,6 +110,9 @@ public class Loadbalancer {
         }
     }
 
+    /**
+     * Register the loadbalancer on the monitor's clusters table
+     */
     public void registerLoadBalancer() {
         try {
             var monitor = monitorInfo.createSocket();

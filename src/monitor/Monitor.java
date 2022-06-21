@@ -14,6 +14,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+/**
+ * Entity responsible for monitor all loadbalancers and servers using heartbeat system
+ */
 public class Monitor {
     private ServerSocket serverSocket;
     private final Lock serverStatesLock;
@@ -25,6 +28,10 @@ public class Monitor {
     private final int nrHeartBeatTries;
     private final int heartBeatInterval;  // in miliseconds
 
+    /**
+     * Creates a new Monitor
+     * @param port Port used by the monitor server
+     */
     public Monitor(int port) {
         this.port = port;
         this.nrHeartBeatTries = 1;
@@ -44,6 +51,9 @@ public class Monitor {
         }
     }
 
+    /**
+     * Starts listening for incoming requests
+     */
     public void listen() {
         System.out.printf("Monitor listening on port %d\n", port);
 
@@ -58,6 +68,9 @@ public class Monitor {
         }
     }
 
+    /**
+     * Handles a specific connection of a client
+     */
     private void handleClient(Socket client) {
         try {
             var output = new ObjectOutputStream(client.getOutputStream());
@@ -115,6 +128,9 @@ public class Monitor {
         return requestStatusTableModel;
     }
 
+    /**
+     * Sends heartbeat request to specified loadbalancer or server
+     */
     private void heartBeat(int id, SocketInfo socketInfo, MessageCodes originalMessageCode) {
 
         int nrHeartBeatsFailed = 0;
@@ -154,6 +170,11 @@ public class Monitor {
         }
     }
 
+    /**
+     * Handles load balancer crash by promoting a new primary loadbalance if necessary
+     * @param id Id of the crashed loadbalancer
+     * @param socketInfo Socket info of the crashed loadbalancer
+     */
     private void handleLoadBalancerCrash(int id, SocketInfo socketInfo) {
         var crashedLoadBalancerInfo = clusterStatusTableModel.markLoadBalancerDown(id);
         System.out.printf("Load balancer with ID %d at %s:%d failed to provide a heart beat too many times and was marked as down\n", id, socketInfo.address(), socketInfo.port());
@@ -181,6 +202,11 @@ public class Monitor {
         }
     }
 
+    /**
+     * Handles server crash by redirecting requests to the loadbalancer again
+     * @param id Id of the crashed server
+     * @param socketInfo Socket info of the crashed server
+     */
     private void handleServerCrash(int id, SocketInfo socketInfo) {
         clusterStatusTableModel.downServer(id);
         var messages = pendingMessages.values()

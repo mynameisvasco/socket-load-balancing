@@ -2,13 +2,14 @@ package client;
 
 import shared.*;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 
 /**
- * Represents the client capable of using the math service using a TCP Socket.
+ * Entity representing the client capable of using the math service using a TCP Socket.
  */
 public class Client {
     private static int requestCount = 0;
@@ -38,8 +39,9 @@ public class Client {
 
     /**
      * Creates and start the threads responsible for sending a request and receiving the response
+     *
      * @param numberOfIterations Number of decimal places of PI
-     * @param deadline Priority of the request
+     * @param deadline           Priority of the request
      */
     public void sendRequest(int numberOfIterations, int deadline) {
         if (loadBalancerInfo == null || id == 0) {
@@ -51,7 +53,6 @@ public class Client {
         var request = new Message(id, requestId, 0, MessageCodes.PiCalculationRequest, numberOfIterations,
                 0, deadline, new SocketInfo("localhost", receiverPort), "pending");
 
-        pendingRequestsTableModel.addRequest(request);
         var senderThread = new Thread(() -> requestSender(request));
         var receiverThread = new Thread(this::responseReceiver);
         receiverThread.start();
@@ -72,7 +73,8 @@ public class Client {
     }
 
     /**
-     * Sends a request
+     * Sends a request to the math service
+     *
      * @param request Request to be sent
      */
     private void requestSender(Message request) {
@@ -81,30 +83,33 @@ public class Client {
             var output = new ObjectOutputStream(loadbalancer.getOutputStream());
             output.writeObject(request);
             output.flush();
+            SwingUtilities.invokeLater(() -> {
+                pendingRequestsTableModel.addRequest(request);
+            });
+
             System.out.printf("Request sent %s\n", request.getRequestId());
             loadbalancer.close();
         } catch (IOException e) {
+            JOptionPane.showMessageDialog(null, "Loadbalancer is not active or ip and port are incorrect.");
             System.err.printf("Failed to send request %s\n", request.getRequestId());
         }
     }
 
     /**
-     *
+     * Receives a response from the math service
      */
     private void responseReceiver() {
-
-            try {
-                var sender = receiver.accept();
-                var input = new ObjectInputStream(sender.getInputStream());
-                var response = (Message) input.readObject();
-                System.out.printf("Response received %s\n", response.getRequestId());
-                pendingRequestsTableModel.removeRequest(response);
-                responsesTableModel.addResponse(response);
-                sender.close();
-            } catch (IOException | ClassNotFoundException e) {
-                responseReceiver();
-                System.err.println("Failed to receive response");
-            }
-
+        try {
+            var sender = receiver.accept();
+            var input = new ObjectInputStream(sender.getInputStream());
+            var response = (Message) input.readObject();
+            System.out.printf("Response received %s\n", response.getRequestId());
+            pendingRequestsTableModel.removeRequest(response);
+            responsesTableModel.addResponse(response);
+            sender.close();
+        } catch (IOException | ClassNotFoundException e) {
+            responseReceiver();
+            System.err.println("Failed to receive response");
+        }
     }
 }
