@@ -45,12 +45,12 @@
             <properties/>
             <border type="none"/>
             <children>
-              <component id="3a12b" class="javax.swing.JLabel" binding="requestsLabel">
+              <component id="3a12b" class="javax.swing.JLabel" binding="serverStateLabel">
                 <constraints>
                   <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text value="Requests"/>
+                  <text value="Server State"/>
                 </properties>
               </component>
               <scrollpane id="d7ffb">
@@ -114,7 +114,7 @@
               </grid>
             </constraints>
             <properties>
-              <text value="1"/>
+              <text value="10900"/>
             </properties>
           </component>
         </children>

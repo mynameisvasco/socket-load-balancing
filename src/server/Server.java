@@ -20,9 +20,10 @@ public class Server {
     private final int port;
     private final SocketInfo monitorInfo;
     private final Fifo<Message> pendingRequests = new Fifo<>(2);
-    private final RequestsTableModel requestsTableModel = new RequestsTableModel();
+    private final ServerStateTableModel serverStateTableModel = new ServerStateTableModel();
     private final ResponsesTableModel responsesTableModel = new ResponsesTableModel();
     private final Lock totalIterationsLock = new ReentrantLock();
+    private final Lock serverStateLock = new ReentrantLock();
     private ServerSocket server;
     private int totalIterations = 0;
 
@@ -53,7 +54,8 @@ public class Server {
         this.registerServer();
 
         for (int i = 0; i < 3; i++) {
-            var thread = new Thread(this::responseSender);
+            int threadNr = i + 1;
+            var thread = new Thread(() -> responseSender(threadNr));
             thread.start();
         }
 
@@ -76,6 +78,8 @@ public class Server {
 
                 System.out.printf("Request received from %s\n", clientInfo);
 
+                serverStateLock.lock();
+
                 if (!canDoIterations(request.getNumberOfIterations())) {
                     var monitor = monitorInfo.createSocket();
                     var monitorOutput = new ObjectOutputStream(monitor.getOutputStream());
@@ -88,7 +92,7 @@ public class Server {
                     System.out.printf("Request rejected because server has more than 20 iterations %s\n", request);
                     request.setServerId(id);
                     request.setCode(MessageCodes.PiCalculationRejection);
-                    requestsTableModel.addRequest(request);
+                    responsesTableModel.addResponse(request);
                     receiverOutput.writeObject(request);
                     continue;
                 }
@@ -104,14 +108,17 @@ public class Server {
                     monitorOutput.flush();
                     var receiver = request.getSocketInfo().createSocket();
                     var receiverOutput = new ObjectOutputStream(receiver.getOutputStream());
-                    System.out.printf("Request rejected because server has 3 pending requests %s\n", request);
+                    System.out.printf("Request rejected because server has 2 pending requests %s\n", request);
                     request.setServerId(id);
                     request.setCode(MessageCodes.PiCalculationRejection);
-                    requestsTableModel.addRequest(request);
+                    responsesTableModel.addResponse(request);
                     receiverOutput.writeObject(request);
                 } else {
-                    requestsTableModel.addRequest(request);
+                    serverStateTableModel.addRequestToQueue(request);
                 }
+
+                serverStateLock.unlock();
+
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -121,9 +128,11 @@ public class Server {
     /**
      * Picks the most priority request from the fifo and replies with the correct response
      */
-    private void responseSender() {
+    private void responseSender(int threadNr) {
         while (true) {
+
             var request = pendingRequests.dequeue();
+            serverStateTableModel.dequeueResquest(request, threadNr);
             try {
                 var monitor = monitorInfo.createSocket();
                 var monitorOutput = new ObjectOutputStream(monitor.getOutputStream());
@@ -142,6 +151,7 @@ public class Server {
                     Thread.sleep(5000);
                 }
 
+                serverStateTableModel.removeRequest(request);
                 responsesTableModel.addResponse(request);
                 var output = new ObjectOutputStream(receiver.getOutputStream());
                 output.writeObject(request);
@@ -240,8 +250,8 @@ public class Server {
         }
     }
 
-    public RequestsTableModel getRequestsTableModel() {
-        return requestsTableModel;
+    public ServerStateTableModel getRequestsTableModel() {
+        return serverStateTableModel;
     }
 
     public ResponsesTableModel getResponsesTableModel() {
