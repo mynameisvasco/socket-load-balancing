@@ -26,8 +26,6 @@ public class Client {
             }
 
             this.receiver = new ServerSocket(receiverPort);
-            var receiverThread = new Thread(this::responseReceiver);
-            receiverThread.start();
         } catch (IOException e) {
             System.err.printf("Failed to create receiver socket at port %d\n", receiverPort);
             e.printStackTrace();
@@ -47,6 +45,8 @@ public class Client {
 
         pendingRequestsTableModel.addRequest(request);
         var senderThread = new Thread(() -> requestSender(request));
+        var receiverThread = new Thread(this::responseReceiver);
+        receiverThread.start();
         senderThread.start();
         requestCount++;
     }
@@ -85,10 +85,9 @@ public class Client {
                 System.out.printf("Response received %s\n", response.getRequestId());
                 responsesTableModel.addResponse(response);
                 sender.close();
-            } catch (IOException e) {
+            } catch (IOException | ClassNotFoundException e) {
+                responseReceiver();
                 System.err.println("Failed to receive response");
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
             }
         }
     }
