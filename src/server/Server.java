@@ -32,10 +32,10 @@ public class Server {
      * @param id Id of the server
      * @param port Port used by the server socket
      */
-    public Server(int id, int port) {
+    public Server(int id, int port, String monitorIp) {
         this.id = id;
         this.port = port;
-        this.monitorInfo = new SocketInfo("localhost", 6999);
+        this.monitorInfo = new SocketInfo(monitorIp, 6999);
 
         try {
             server = new ServerSocket(port);

@@ -15,6 +15,7 @@ public class ServerGui extends JFrame {
     private JTextField portTextField;
     private JLabel portLabel;
     private JTextField idTextField;
+    private JTextField monitorIpTextField;
     private Server server;
 
     public ServerGui() {
@@ -34,7 +35,7 @@ public class ServerGui extends JFrame {
     private void onLaunch(ActionEvent actionEvent) {
         launchButton.setEnabled(false);
         portTextField.setEnabled(false);
-        server = new Server(Integer.parseInt(idTextField.getText()), Integer.parseInt(portTextField.getText()));
+        server = new Server(Integer.parseInt(idTextField.getText()), Integer.parseInt(portTextField.getText()), monitorIpTextField.getText());
         requestsTable.setModel(server.getRequestsTableModel());
         responsesTable.setModel(server.getResponsesTableModel());
         Thread listenThread = new Thread(() -> server.listen());
