@@ -7,6 +7,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 
+/**
+ * Represents the client capable of using the math service using a TCP Socket.
+ */
 public class Client {
     private static int requestCount = 0;
     private final PendingRequestsTableModel pendingRequestsTableModel = new PendingRequestsTableModel();
@@ -33,6 +36,11 @@ public class Client {
         }
     }
 
+    /**
+     * Creates and start the threads responsible for sending a request and receiving the response
+     * @param numberOfIterations Number of decimal places of PI
+     * @param deadline Priority of the request
+     */
     public void sendRequest(int numberOfIterations, int deadline) {
         if (loadBalancerInfo == null || id == 0) {
             System.err.println("It's not possible to send a request without setting the loadbalancer ip first and the client id");
@@ -63,6 +71,10 @@ public class Client {
         return responsesTableModel;
     }
 
+    /**
+     * Sends a request
+     * @param request Request to be sent
+     */
     private void requestSender(Message request) {
         try {
             var loadbalancer = loadBalancerInfo.createSocket();
@@ -76,8 +88,11 @@ public class Client {
         }
     }
 
+    /**
+     *
+     */
     private void responseReceiver() {
-        while (true) {
+
             try {
                 var sender = receiver.accept();
                 var input = new ObjectInputStream(sender.getInputStream());
@@ -90,6 +105,6 @@ public class Client {
                 responseReceiver();
                 System.err.println("Failed to receive response");
             }
-        }
+
     }
 }

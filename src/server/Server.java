@@ -12,6 +12,9 @@ import java.net.ServerSocket;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * Entity responsible for providing math services (PI) to the clients
+ */
 public class Server {
     private final int id;
     private final int port;
@@ -23,6 +26,11 @@ public class Server {
     private ServerSocket server;
     private int totalIterations = 0;
 
+    /**
+     * Creates new Server
+     * @param id Id of the server
+     * @param port Port used by the server socket
+     */
     public Server(int id, int port) {
         this.id = id;
         this.port = port;
@@ -37,6 +45,9 @@ public class Server {
         }
     }
 
+    /**
+     * Starts listening for incoming requests and reasons about the possibility to handle the request.
+     */
     public void listen() {
         System.out.printf("Server listen on port %s\n", port);
         this.registerServer();
@@ -107,6 +118,9 @@ public class Server {
         }
     }
 
+    /**
+     * Picks the most priority request from the fifo and replies with the correct response
+     */
     private void responseSender() {
         while (true) {
             var request = pendingRequests.dequeue();
@@ -146,18 +160,31 @@ public class Server {
         }
     }
 
+    /**
+     * Adds thread-safely to the number of current iterations
+     * @param numberOfIterations Number of iterations to add
+     */
     private void addIterations(int numberOfIterations) {
         totalIterationsLock.lock();
         totalIterations += numberOfIterations;
         totalIterationsLock.unlock();
     }
 
+    /**
+     * Subtract thread-safely to the number of current iterations
+     * @param numberOfIterations Number of iterations to subtract
+     */
     private void subIterations(int numberOfIterations) {
         totalIterationsLock.lock();
         totalIterations -= numberOfIterations;
         totalIterationsLock.unlock();
     }
 
+    /**
+     * Check thread-safely if the server supports more iterations
+     * @param numberOfIterations Number of iterations to check
+     * @return true if it's possible, false otherwise.
+     */
     private boolean canDoIterations(int numberOfIterations) {
         try {
             totalIterationsLock.lock();
@@ -183,6 +210,9 @@ public class Server {
                 .doubleValue();
     }
 
+    /**
+     * Register the server on the monitor's clusters table
+     */
     private void registerServer() {
         try {
             var monitor = monitorInfo.createSocket();
