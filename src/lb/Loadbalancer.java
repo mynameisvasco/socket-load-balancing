@@ -13,12 +13,22 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Entity representing the loadbalancer capable of balance all the math service requests through different servers.
+ */
 public class Loadbalancer {
     private final int id;
     private ServerSocket loadBalancer;
     private final int port;
     private final SocketInfo monitorInfo;
 
+    /**
+     * Creates a new Loadbalancer
+     * @param id Id of the loadbalancer
+     * @param loadBalancerPort Port that clients use to connect to the load balancer
+     * @param monitorIP Monitor entity socket ip
+     * @param monitorPort Monitor entity socket port
+     */
     public Loadbalancer(int id, int loadBalancerPort, String monitorIP, int monitorPort) {
         this.id = id;
         this.port = loadBalancerPort;
@@ -33,6 +43,9 @@ public class Loadbalancer {
         }
     }
 
+    /**
+     * Starts listening for incoming requests
+     */
     public void listen() {
         System.out.printf("Load balancer listening on port %d\n", port);
 
@@ -61,12 +74,21 @@ public class Loadbalancer {
         }
     }
 
+    /**
+     * Returns the server with less load
+     * @param serverStates List of the states of all registered servers
+     * @return The state of the server with less load
+     */
     private ServerState getLessLoadServer(List<ServerState> serverStates) {
         return serverStates.stream()
                 .min(Comparator.comparingInt(ServerState::getTotalNumberOfIterations))
                 .get();
     }
 
+    /**
+     * Receives and redirect the incoming request to the correct server
+     * @param request Request to redirect
+     */
     private void requestHandler(Message request) {
         try {
             var monitor = monitorInfo.createSocket();
