@@ -108,7 +108,6 @@ public class Client {
             responsesTableModel.addResponse(response);
             sender.close();
         } catch (IOException | ClassNotFoundException e) {
-            responseReceiver();
             System.err.println("Failed to receive response");
         }
     }
