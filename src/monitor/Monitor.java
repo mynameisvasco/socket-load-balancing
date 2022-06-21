@@ -93,8 +93,7 @@ public class Monitor {
 
                     switch (message.getStatus()) {
                         case "Processing" -> pendingMessages.put(message.getRequestId(), message);
-                        case "Completed" -> pendingMessages.remove(message.getRequestId());
-                        case "Rejected" -> pendingMessages.remove(message.getRequestId());
+                        case "Completed", "Rejected" -> pendingMessages.remove(message.getRequestId());
                     }
 
                     requestStatusTableModel.updateRequest(message.getRequestId(), message.getStatus());
@@ -189,25 +188,20 @@ public class Monitor {
                 .filter(m -> m.getServerId() == id)
                 .toList();
 
-        var orderServerStates = serverStates.stream()
-                .sorted(Comparator.comparingInt(ServerState::getTotalNumberOfIterations))
-                .toList();
-
-        var index = 0;
 
         for (var message : messages) {
-            var server = orderServerStates.get(index % orderServerStates.size()).createSocket();
+            var lb = clusterStatusTableModel.getPrimaryLoadBalancer();
+            message.setCode(MessageCodes.PiCalculationRequest);
 
             try {
-                var output = new ObjectOutputStream(server.getOutputStream());
+                var loadbalancer = lb.createSocket();
+                var output = new ObjectOutputStream(loadbalancer.getOutputStream());
                 output.writeObject(message);
                 output.flush();
                 output.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-            index++;
         }
     }
 }
