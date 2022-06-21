@@ -39,6 +39,8 @@ public class ServerGui extends JFrame {
         launchButton.setEnabled(false);
         portTextField.setEnabled(false);
         server = new Server(Integer.parseInt(idTextField.getText()), Integer.parseInt(portTextField.getText()));
+        requestsTable.setModel(server.getRequestsTableModel());
+        responsesTable.setModel(server.getResponsesTableModel());
         Thread listenThread = new Thread(() -> server.listen());
         listenThread.start();
     }

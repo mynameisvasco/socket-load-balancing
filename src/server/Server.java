@@ -1,5 +1,6 @@
 package server;
 
+import client.ResponsesTableModel;
 import shared.Fifo;
 import shared.Message;
 import shared.MessageCodes;
@@ -17,6 +18,8 @@ public class Server {
     private final int port;
     private final SocketInfo monitorInfo;
     private final Fifo<Message> pendingRequests = new Fifo<>(2);
+    private final RequestsTableModel requestsTableModel = new RequestsTableModel();
+    private final ResponsesTableModel responsesTableModel = new ResponsesTableModel();
     private final Lock totalIterationsLock = new ReentrantLock();
     private ServerSocket server;
     private int totalIterations = 0;
@@ -75,6 +78,7 @@ public class Server {
                     System.out.printf("Request rejected because server has more than 20 iterations %s\n", request);
                     request.setServerId(id);
                     request.setCode(MessageCodes.PiCalculationRejection);
+                    requestsTableModel.addRequest(request);
                     receiverOutput.writeObject(request);
                     continue;
                 }
@@ -93,7 +97,10 @@ public class Server {
                     System.out.printf("Request rejected because server has 3 pending requests %s\n", request);
                     request.setServerId(id);
                     request.setCode(MessageCodes.PiCalculationRejection);
+                    requestsTableModel.addRequest(request);
                     receiverOutput.writeObject(request);
+                } else {
+                    requestsTableModel.addRequest(request);
                 }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
@@ -122,6 +129,7 @@ public class Server {
                     Thread.sleep(5000);
                 }
 
+                responsesTableModel.addResponse(request);
                 var output = new ObjectOutputStream(receiver.getOutputStream());
                 output.writeObject(request);
                 output.flush();
@@ -191,6 +199,14 @@ public class Server {
             System.err.printf("Failed to register server on monitor at %s:%d\n", monitorInfo.address(),
                     monitorInfo.port());
         }
+    }
+
+    public RequestsTableModel getRequestsTableModel() {
+        return requestsTableModel;
+    }
+
+    public ResponsesTableModel getResponsesTableModel() {
+        return responsesTableModel;
     }
 }
 
