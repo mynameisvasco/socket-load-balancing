@@ -83,6 +83,7 @@ public class Client {
                 var input = new ObjectInputStream(sender.getInputStream());
                 var response = (Message) input.readObject();
                 System.out.printf("Response received %s\n", response.getRequestId());
+                pendingRequestsTableModel.removeRequest(response);
                 responsesTableModel.addResponse(response);
                 sender.close();
             } catch (IOException | ClassNotFoundException e) {

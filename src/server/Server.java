@@ -1,6 +1,5 @@
 package server;
 
-import client.ResponsesTableModel;
 import shared.Fifo;
 import shared.Message;
 import shared.MessageCodes;
