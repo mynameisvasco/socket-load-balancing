@@ -32,10 +32,10 @@ public class Monitor {
      * Creates a new Monitor
      * @param port Port used by the monitor server
      */
-    public Monitor(int port) {
+    public Monitor(int port, int heartBeatInterval, int nrHeartBeatTries) {
         this.port = port;
-        this.nrHeartBeatTries = 1;
-        this.heartBeatInterval = 1000;
+        this.nrHeartBeatTries = nrHeartBeatTries;
+        this.heartBeatInterval = heartBeatInterval;
         this.pendingMessages = new HashMap<>();
         this.serverStatesLock = new ReentrantLock();
         this.serverStates = new LinkedList<>();

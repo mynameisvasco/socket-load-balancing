@@ -16,6 +16,11 @@ public class ClusterStatusTableModel extends DefaultTableModel {
         addColumn("Number Iterations");
     }
 
+    @Override
+    public boolean isCellEditable(int row, int column) {
+        return false;
+    }
+
     public boolean activeLoadBalancerExists() {
         boolean activeLoadBalancerExists = false;
 
@@ -52,8 +57,8 @@ public class ClusterStatusTableModel extends DefaultTableModel {
             dataVector.get(i).set(4, "UP");
             fireTableDataChanged();
         } else {
-            addRow(new Object[]{"Server", request.getServerId(), request.getSocketInfo().address(),
-                    request.getSocketInfo().port(), "UP", 0});
+            insertRow(0, new Object[]{"Server", request.getServerId(), request.getSocketInfo().address(),
+                      request.getSocketInfo().port(), "UP", 0});
         }
     }
 
@@ -80,8 +85,8 @@ public class ClusterStatusTableModel extends DefaultTableModel {
         else type = "Primary LB";
 
         if (i == getRowCount()) {
-            addRow(new Object[]{type, request.getServerId(), request.getSocketInfo().address(),
-                    request.getSocketInfo().port(), "UP", "-"});
+                    insertRow(0, new Object[]{type, request.getServerId(), request.getSocketInfo().address(),
+                              request.getSocketInfo().port(), "UP", "-"});
         } else {
             dataVector.get(i).set(0, type);
             dataVector.get(i).set(4, "UP");

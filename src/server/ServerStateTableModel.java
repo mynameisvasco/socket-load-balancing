@@ -90,7 +90,7 @@ public class ServerStateTableModel extends DefaultTableModel {
         serverStateUpdateLock.unlock();
     }
 
-        public void addRequest(Message request) {
+    public void addRequest(Message request) {
         var formatter = new SimpleDateFormat("HH:mm:ss");
         var date = new Date(System.currentTimeMillis());
 
