@@ -1,18 +1,14 @@
 package server;
 
-import monitor.Monitor;
-
 import javax.swing.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 
 public class ServerGui extends JFrame {
     private JPanel mainPanel;
     private JLabel idLabel;
     private JButton launchButton;
     private JButton closeButton;
-    private JLabel requestsLabel;
+    private JLabel serverStateLabel;
     private JTable requestsTable;
     private JLabel responsesLabel;
     private JTable responsesTable;
