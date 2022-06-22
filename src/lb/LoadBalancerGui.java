@@ -32,7 +32,8 @@ public class LoadBalancerGui extends JFrame {
                 loadBalancerPortTextField.setEnabled(false);
                 loadBalancerIDTextField.setEnabled(false);
                 loadbalancer = new Loadbalancer(Integer.parseInt(loadBalancerIDTextField.getText().toString()),
-                        Integer.parseInt(loadBalancerPortTextField.getText().toString()), monitorIPTextField.getText().toString(),
+                        Integer.parseInt(loadBalancerPortTextField.getText().toString()));
+                loadbalancer.setMonitorSocketInfo(monitorIPTextField.getText().toString(),
                         Integer.parseInt(monitorPortTextField.getText().toString()));
                 loadbalancer.registerLoadBalancer();
                 Thread listenThread = new Thread(() -> loadbalancer.listen());

@@ -19,7 +19,7 @@ public class ResponsesTableModel extends DefaultTableModel {
     }
 
     public void addResponse(Message response) {
-        var formatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+        var formatter = new SimpleDateFormat("HH:mm:ss");
         var date = new Date(System.currentTimeMillis());
 
         insertRow(0, new Object[]{

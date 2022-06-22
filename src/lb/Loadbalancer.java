@@ -14,13 +14,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Entity representing the loadbalancer capable of balance all the math service requests through different servers.
+ * Entity representing the loadbalancer capable of balance all the math service requests through different servers. It
+ * should be launched after the monitor process
  */
 public class Loadbalancer {
     private final int id;
     private ServerSocket loadBalancer;
     private final int port;
-    private final SocketInfo monitorInfo;
+    private SocketInfo monitorInfo;
 
     /**
      * Creates a new Loadbalancer
@@ -29,10 +30,9 @@ public class Loadbalancer {
      * @param monitorIP Monitor entity socket ip
      * @param monitorPort Monitor entity socket port
      */
-    public Loadbalancer(int id, int loadBalancerPort, String monitorIP, int monitorPort) {
+    public Loadbalancer(int id, int loadBalancerPort) {
         this.id = id;
         this.port = loadBalancerPort;
-        this.monitorInfo = new SocketInfo(monitorIP, monitorPort);
 
         try {
             loadBalancer = new ServerSocket(port);
@@ -41,6 +41,10 @@ public class Loadbalancer {
             e.printStackTrace();
             System.exit(-1);
         }
+    }
+
+    public void setMonitorSocketInfo(String monitorIP, int monitorPort) {
+        monitorInfo = new SocketInfo(monitorIP, monitorPort);
     }
 
     /**
@@ -65,7 +69,7 @@ public class Loadbalancer {
                     case PromoteLoadBalancer -> {
                         loadBalancer.close();
                         loadBalancer = new ServerSocket(message.getSocketInfo().port());
-                        System.out.printf("Promoted to primary and changed to port %d\n", client.getPort());
+                        System.out.printf("Promoted to primary and changed to port %d\n", message.getSocketInfo().port());
                     }
                 }
             } catch (IOException | ClassNotFoundException e) {

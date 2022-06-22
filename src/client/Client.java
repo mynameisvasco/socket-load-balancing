@@ -9,7 +9,8 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 
 /**
- * Entity representing the client capable of using the math service using a TCP Socket.
+ * Entity representing the client capable of using the math service using a TCP Socket. It requires at least an instance
+ * of all the cluster processes (monitor, load balancer and server) before requests can be serviced
  */
 public class Client {
     private static int requestCount = 0;
@@ -89,7 +90,7 @@ public class Client {
             System.out.printf("Request sent %s\n", request.getRequestId());
             loadbalancer.close();
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(null, "Loadbalancer is not active or ip and port are incorrect.");
+            JOptionPane.showMessageDialog(null, "Load balancer is not active or ip and port are incorrect.");
             System.err.printf("Failed to send request %s\n", request.getRequestId());
         }
     }

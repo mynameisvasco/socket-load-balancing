@@ -13,7 +13,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Entity responsible for providing math services (PI) to the clients
+ * Entity responsible for providing math services (PI) to the clients, it should be launched
+ * after the monitor process
  */
 public class Server {
     private final int id;
@@ -32,10 +33,10 @@ public class Server {
      * @param id Id of the server
      * @param port Port used by the server socket
      */
-    public Server(int id, int port, String monitorIp) {
+    public Server(int id, int port, String monitorIp, int monitorPort) {
         this.id = id;
         this.port = port;
-        this.monitorInfo = new SocketInfo(monitorIp, 6999);
+        this.monitorInfo = new SocketInfo(monitorIp, monitorPort);
 
         try {
             server = new ServerSocket(port);

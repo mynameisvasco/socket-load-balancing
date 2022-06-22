@@ -24,8 +24,8 @@ public class ServerStateTableModel extends DefaultTableModel {
         addRow(new Object[] {"Thread 1", "-", "-", "-", "-", "-"});
         addRow(new Object[] {"Thread 2", "-", "-", "-", "-", "-"});
         addRow(new Object[] {"Thread 3", "-", "-", "-", "-", "-"});
-        addRow(new Object[] {"Queue Entry 1", "-", "-", "-", "-", "-"});
-        addRow(new Object[] {"Queue Entry 2", "-", "-", "-", "-", "-"});
+        addRow(new Object[] {"Queued", "-", "-", "-", "-", "-"});
+        addRow(new Object[] {"Queued", "-", "-", "-", "-", "-"});
     }
 
     @Override

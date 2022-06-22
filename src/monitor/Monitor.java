@@ -15,7 +15,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /**
- * Entity responsible for monitor all loadbalancers and servers using heartbeat system
+ * Entity responsible for monitoring all load balancers and servers using heartbeat system, it should be launched
+ * before the servers' and load balancers' processes so that they are registered and the heartbeat begins
  */
 public class Monitor {
     private ServerSocket serverSocket;
@@ -139,6 +140,7 @@ public class Monitor {
             try {
                 Thread.sleep(heartBeatInterval);
                 var server = clusterStatusTableModel.getInfoById(id).createSocket();
+//                System.out.println(server.getPort());
                 var output = new ObjectOutputStream(server.getOutputStream());
                 var input = new ObjectInputStream(server.getInputStream());
                 var heartBeatMessage = new Message(0, 0, 0, MessageCodes.HeartBeat, 0, 0, 0, null, "");
@@ -147,7 +149,6 @@ public class Monitor {
 
                 if (originalMessageCode == MessageCodes.RegisterServer) {
                     var message = (Message) input.readObject();
-                    System.out.println(message.getNumberOfIterations());
                     clusterStatusTableModel.setNumberOfIterations(message);
                     serverStates.forEach(s -> {
                         if (s.getServerId() == message.getServerId()) {
@@ -171,9 +172,9 @@ public class Monitor {
     }
 
     /**
-     * Handles load balancer crash by promoting a new primary loadbalance if necessary
-     * @param id Id of the crashed loadbalancer
-     * @param socketInfo Socket info of the crashed loadbalancer
+     * Handles load balancer crash by promoting a new primary load balancer if necessary
+     * @param id Id of the crashed load balancer
+     * @param socketInfo Socket info of the crashed load balancer
      */
     private void handleLoadBalancerCrash(int id, SocketInfo socketInfo) {
         var crashedLoadBalancerInfo = clusterStatusTableModel.markLoadBalancerDown(id);

@@ -13,14 +13,14 @@ public class ClientGui extends JFrame {
     private JButton sendButton;
     private JTable pendingRequestsTable;
     private JTable responsesTable;
-    private JTextField loadbalancerIpTextField;
+    private JTextField loadBalancerIpTextField;
     private JTextField clientIdTextField;
     private JTextField deadlineTextField;
 
     public ClientGui() {
         super("Client");
         client = new Client();
-        setMinimumSize(new Dimension(1280, 720));
+        setSize(new Dimension(400, 820));
         pendingRequestsTable.setModel(client.getPendingRequestsTableModel());
         responsesTable.setModel(client.getResponsesTableModel());
         sendButton.addActionListener(this::onSendRequest);
@@ -37,19 +37,18 @@ public class ClientGui extends JFrame {
         });
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setContentPane(mainPanel);
-        pack();
         setVisible(true);
     }
 
     private void onSendRequest(ActionEvent actionEvent) {
         try {
-            var host = loadbalancerIpTextField.getText().split(":")[0];
-            var port = Integer.parseInt(loadbalancerIpTextField.getText().split(":")[1]);
+            var host = loadBalancerIpTextField.getText().split(":")[0];
+            var port = Integer.parseInt(loadBalancerIpTextField.getText().split(":")[1]);
             client.setId(Integer.parseInt(clientIdTextField.getText()));
             client.setLoadbalancerSocketInfo(host, port);
         } catch (Exception e) {
             System.err.println(e.getMessage());
-            JOptionPane.showMessageDialog(null, "Can't connect to loadbalancer.");
+            JOptionPane.showMessageDialog(null, "Can't connect to load balancer.");
         }
 
         try {
